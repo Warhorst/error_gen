@@ -1,5 +1,5 @@
 #[cfg(test)]
-mod tests {
+mod struct_tests {
     use std::fmt::{Debug, Formatter};
 
     use error_gen::error;
