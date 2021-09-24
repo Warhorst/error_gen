@@ -2,7 +2,7 @@
 mod struct_tests {
     use std::fmt::{Debug, Formatter};
 
-    use error_gen::error;
+    use error_gen::{error, e_error};
 
     /// No message, implement Display manually
     #[error]
@@ -31,6 +31,14 @@ mod struct_tests {
 
     #[error("Lifetimes and generics")]
     struct E7<'a, T>(&'a T) where T: Debug;
+
+    #[e_error]
+    enum E8 {
+        #[e_error("Wololo", 5)]
+        Foo,
+        #[e_error("Wazup")]
+        Bar
+    }
 
 
     impl std::fmt::Display for E0 {
