@@ -1,5 +1,8 @@
 use proc_macro::TokenStream;
 
+#[macro_use]
+extern crate syn;
+
 mod struct_error;
 mod enum_error;
 

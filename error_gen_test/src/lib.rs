@@ -34,10 +34,16 @@ mod struct_tests {
 
     #[e_error]
     enum E8 {
-        #[e_error("Wololo", 5)]
+        //#[e_error("Wololo", 5)]
         Foo,
-        #[e_error("Wazup")]
+        //#[e_error("Wazup")]
         Bar
+    }
+
+    impl std::fmt::Display for E8 {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            todo!()
+        }
     }
 
 
