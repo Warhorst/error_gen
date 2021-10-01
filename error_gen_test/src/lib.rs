@@ -34,7 +34,8 @@ mod struct_tests {
 
     #[e_error]
     enum E8 {
-        //#[e_error("Wololo", 5)]
+        /// I am doc string
+        #[e_error(description = "Wololo", derive_from = true)]
         Foo,
         //#[e_error("Wazup")]
         Bar
