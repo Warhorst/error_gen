@@ -32,21 +32,18 @@ mod struct_tests {
     #[error("Lifetimes and generics")]
     struct E7<'a, T>(&'a T) where T: Debug;
 
+    // TODO: Rename "description" to "message"
     #[error]
     enum E8<T> where T: Debug {
-        #[error(description = "Wololo", derive_from)]
+        #[error(description = "A foo occurred", derive_from)]
         Foo(usize),
-        #[error(derive_from)]
+        #[error(description = "A wild bar appeared", derive_from)]
         Bar { some_val: f32 },
-        Baz(T)
+        #[error(description = "Generic and dangerous")]
+        Baz(T),
+        #[error(description = "This is some error")]
+        Oof
     }
-
-    impl<T: Debug> std::fmt::Display for E8<T> {
-        fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
-            todo!()
-        }
-    }
-
 
     impl std::fmt::Display for E0 {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
