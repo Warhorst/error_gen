@@ -2,7 +2,7 @@
 mod struct_tests {
     use std::fmt::{Debug, Formatter};
 
-    use error_gen::{error, e_error};
+    use error_gen::error;
 
     /// No message, implement Display manually
     #[error]
@@ -32,10 +32,10 @@ mod struct_tests {
     #[error("Lifetimes and generics")]
     struct E7<'a, T>(&'a T) where T: Debug;
 
-    #[e_error]
+    #[error]
     enum E8 {
         /// I am doc string
-        #[e_error(description = "Wololo", derive_from = true)]
+        #[error(description = "Wololo", derive_from = true)]
         Foo,
         //#[e_error("Wazup")]
         Bar

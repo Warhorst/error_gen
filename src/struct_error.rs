@@ -4,10 +4,7 @@ use quote::{format_ident, quote};
 use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct, NestedMeta, parse_macro_input};
 use syn::__private::TokenStream2;
 
-pub fn implement(attributes: TokenStream, item: TokenStream) -> TokenStream {
-    let item_struct = parse_macro_input!(item as ItemStruct);
-    let attr_args = parse_macro_input!(attributes as AttributeArgs);
-
+pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {
     let display_string_opt = get_display_string(attr_args);
 
     let ident = &item_struct.ident;
