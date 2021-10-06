@@ -20,7 +20,7 @@ mod struct_tests {
     #[error("Struct with named fields. Reference them in the message by name {i}")]
     struct E4 {
         i: usize,
-        j: usize
+        j: usize,
     }
 
     #[error("Generics. Constraints like 'T: Debug' need te be in a where-clause")]
@@ -33,16 +33,16 @@ mod struct_tests {
     struct E7<'a, T>(&'a T) where T: Debug;
 
     #[error]
-    enum E8 {
-        /// I am doc string
-        #[error(description = "Wololo", derive_from = true)]
-        Foo,
-        //#[e_error("Wazup")]
-        Bar
+    enum E8<T> where T: Debug {
+        #[error(description = "Wololo", derive_from)]
+        Foo(usize),
+        #[error(derive_from)]
+        Bar { some_val: f32 },
+        Baz(T)
     }
 
-    impl std::fmt::Display for E8 {
-        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    impl<T: Debug> std::fmt::Display for E8<T> {
+        fn fmt(&self, _f: &mut Formatter<'_>) -> std::fmt::Result {
             todo!()
         }
     }

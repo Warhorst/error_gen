@@ -1,7 +1,6 @@
 use syn::{Lit, NestedMeta, Meta, Attribute, AttributeArgs};
 use syn::Lit::*;
 use std::collections::HashMap;
-use syn::punctuated::Punctuated;
 use crate::common::*;
 
 /// Representation of attributes as key value pairs with names as key and primitives as values.
@@ -65,6 +64,9 @@ impl Parameters {
     }
 }
 
+/// syn::Lit describes a literal from a token stream.
+/// This is not very handy to use, for example when creating a literal value like 'true'.
+/// This LitValue enum fixes this issue by ignoring the token stream part and only wrapping the literal value.
 pub enum LitValue {
     String(String),
     Boolean(bool),

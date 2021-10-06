@@ -1,7 +1,7 @@
 use proc_macro::TokenStream;
 
 use quote::{format_ident, quote};
-use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct, NestedMeta, parse_macro_input};
+use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct, NestedMeta};
 use syn::__private::TokenStream2;
 
 pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {

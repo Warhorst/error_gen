@@ -1,7 +1,6 @@
 use proc_macro::TokenStream;
 use syn::{parse, ItemStruct, ItemEnum, parse_macro_input, AttributeArgs};
 
-#[macro_use]
 extern crate syn;
 
 mod struct_error;
