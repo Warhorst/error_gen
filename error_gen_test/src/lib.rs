@@ -1,3 +1,4 @@
+// Todo replace with real tests
 #[cfg(test)]
 mod struct_tests {
     use std::fmt::{Debug, Formatter};
@@ -37,8 +38,8 @@ mod struct_tests {
     enum E8<T> where T: Debug {
         #[error(description = "A foo occurred", derive_from)]
         Foo(usize),
-        #[error(description = "A wild bar appeared", derive_from)]
-        Bar { some_val: f32 },
+        #[error(description = "A wild bar appeared: {some_val}, {some_other_val}")]
+        Bar { some_val: f32, some_other_val: usize },
         #[error(description = "Generic and dangerous")]
         Baz(T),
         #[error(description = "This is some error")]

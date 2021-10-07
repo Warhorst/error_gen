@@ -1,8 +1,9 @@
 use proc_macro::TokenStream;
 
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct, NestedMeta};
 use syn::__private::TokenStream2;
+use crate::common::*;
 
 pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {
     let display_string_opt = get_display_string(attr_args);
@@ -58,20 +59,6 @@ fn create_display_implementation(display_string_opt: Option<String>, ident: &Ide
     };
 
     create_implementation_with_write_parameters(display_string, ident, generics, write_parameters)
-}
-
-fn create_named_write_parameters(display_string: &String, fields: &Fields) -> Vec<TokenStream2> {
-    let mut parameters = vec![];
-    for field in fields {
-        if let Some(ref i) = &field.ident {
-            let field_name = i.to_string();
-            if display_string.contains(&format!("{{{}}}", field_name)) {
-                let id = format_ident!("{}", field_name);
-                parameters.push(quote! {, #id = self.#id});
-            }
-        }
-    }
-    parameters
 }
 
 fn create_positional_write_parameters(display_string: &mut String, fields: &Fields) -> Vec<TokenStream2> {
