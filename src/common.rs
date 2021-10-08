@@ -1,4 +1,4 @@
-use syn::{Path, Attribute, Field, FieldsNamed};
+use syn::{Path, Attribute, Field, FieldsNamed, FieldsUnnamed};
 use syn::__private::TokenStream2;
 use quote::{format_ident, quote};
 use syn::__private::quote::__private::Ident;
@@ -15,6 +15,28 @@ pub fn attribute_is_error(attribute: &Attribute) -> bool {
 }
 
 // TODO: Maybe move the whole display related stuff in separate module
+
+pub fn get_identifier_indexes_in_string(display_string: &String, fields: &FieldsUnnamed) -> Vec<u32> {
+    (0..fields.unnamed.len()).into_iter()
+        .map(|i| match display_string.contains(&format!("{{{}}}", i)) {
+            true => Some(i as u32),
+            false => None
+        })
+        .flat_map(Option::into_iter)
+        .collect()
+}
+
+pub fn create_unnamed_enum_variant_match_arm(identifier_indexes: &Vec<u32>, fields: &FieldsUnnamed) -> Vec<TokenStream2> {
+    vec![]
+}
+
+pub fn adapt_unnamed_enum_variant_message(display_string: &mut String, identifier_indexes: &Vec<u32>) {
+
+}
+
+pub fn create_unnamed_write_parameters_enum(identifier_indexes: &Vec<u32>) -> Vec<TokenStream2> {
+    vec![]
+}
 
 // TODO: Ident to String to Ident = bad
 pub fn get_used_identifiers_in_string<'a, I>(display_string: &String, fields: I) -> Vec<Ident>

@@ -36,8 +36,8 @@ mod struct_tests {
     // TODO: Rename "description" to "message"
     #[error]
     enum E8<T> where T: Debug {
-        #[error(description = "A foo occurred", derive_from)]
-        Foo(usize),
+        #[error(description = "A foo occurred 1, 3")]
+        Foo(usize, f32, usize, u8),
         #[error(description = "A wild bar appeared: {some_val}, {some_other_val}")]
         Bar { some_val: f32, some_other_val: usize },
         #[error(description = "Generic and dangerous")]
@@ -50,5 +50,10 @@ mod struct_tests {
         fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
             write!(f, "Implement Display manually for more flexibility")
         }
+    }
+
+    #[test]
+    fn test() {
+        assert_eq!(Some('a'), char::from_u32(97))
     }
 }
