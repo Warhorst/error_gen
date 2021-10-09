@@ -7,6 +7,7 @@ mod struct_error;
 mod enum_error;
 mod parameters;
 mod common;
+mod impl_from;
 
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {

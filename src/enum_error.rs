@@ -7,6 +7,7 @@ use syn::Fields::*;
 use crate::parameters::Parameters;
 use crate::common::*;
 use syn::__private::quote::__private::Ident;
+use crate::impl_from::*;
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
@@ -139,55 +140,3 @@ fn create_display_implementation_with_default(item_enum: &ItemEnum, default_mess
     }
 }
 
-fn create_from_implementation(item_enum: &ItemEnum, variant: &Variant) -> TokenStream2 {
-    match &variant.fields {
-        Named(fields) => create_from_implementation_for_fields_named(item_enum, variant, fields),
-        Unnamed(fields) => create_from_implementation_for_fields_unnamed(item_enum, variant, fields),
-        Unit => panic!("Cannot implement From trait for Unit variants.")
-    }
-}
-
-fn create_from_implementation_for_fields_named(item_enum: &ItemEnum, variant: &Variant, fields: &FieldsNamed) -> TokenStream2 {
-    if fields.named.len() != 1 {
-        panic!("From trait can only be implemented for variants with one field.")
-    }
-
-    let enum_ident = &item_enum.ident;
-    let generics = &item_enum.generics;
-    let where_clause = &generics.where_clause;
-    let variant_ident = &variant.ident;
-
-    let field = fields.named.first().unwrap();
-    let ty = &field.ty;
-    let field_ident = field.ident.as_ref().unwrap();
-
-    quote! {
-        impl #generics std::convert::From<#ty> for #enum_ident #generics #where_clause {
-            fn from(val: #ty) -> Self {
-                #enum_ident::#variant_ident{ #field_ident : val }
-            }
-        }
-    }
-}
-
-fn create_from_implementation_for_fields_unnamed(item_enum: &ItemEnum, variant: &Variant, fields: &FieldsUnnamed) -> TokenStream2 {
-    if fields.unnamed.len() != 1 {
-        panic!("From trait can only be implemented for variants with one field.")
-    }
-
-    let enum_ident = &item_enum.ident;
-    let generics = &item_enum.generics;
-    let where_clause = &generics.where_clause;
-    let variant_ident = &variant.ident;
-
-    let field = fields.unnamed.first().unwrap();
-    let ty = &field.ty;
-
-    quote! {
-        impl #generics std::convert::From<#ty> for #enum_ident #generics #where_clause {
-            fn from(val: #ty) -> Self {
-                #enum_ident::#variant_ident(val)
-            }
-        }
-    }
-}
