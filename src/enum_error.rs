@@ -4,7 +4,7 @@ use quote::quote;
 use syn::{Attribute, ItemEnum, Variant, AttributeArgs, FieldsNamed, FieldsUnnamed};
 use syn::__private::TokenStream2;
 use syn::Fields::*;
-use crate::parameters::Parameters;
+use crate::parameters::{Parameters, LitValue};
 use crate::common::*;
 use syn::__private::quote::__private::Ident;
 use crate::impl_from::*;
@@ -26,7 +26,7 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
         .collect::<Vec<_>>();
 
     for (variant, parameters) in variants_with_parameters {
-        if parameters.value_for_name("derive_from").map_or(false, |lit| lit.bool_value()) {
+        if parameters.value_for_name("derive_from").map_or(false, LitValue::bool_value) {
             from_implementations.push(create_from_implementation(&item_enum, &variant))
         }
 
@@ -36,24 +36,21 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     }
 
     let display_implementation = match display_match_arms.len() == item_enum.variants.len() {
-        true => create_display_implementation(&item_enum, display_match_arms),
+        true => create_display_implementation(&item_enum, display_match_arms, None),
         false => match enum_parameters.value_for_name("description") {
-            Some(val) => create_display_implementation_with_default(&item_enum, val.string_value(), display_match_arms),
+            Some(val) => create_display_implementation(&item_enum, display_match_arms, Some(val.string_value())),
             None => panic!("Not all enum variants have a display message. Provide a default message at the enum definition.")
         }
     };
 
-    let gen = quote! {
+    (quote! {
         #[derive(Debug)] #item_enum
         impl #generics std::error::Error for #ident #generics #where_clause {}
 
         #(#from_implementations)*
 
         #display_implementation
-    };
-    // TODO: remove when done
-    println!("{}", gen);
-    gen.into()
+    }).into()
 }
 
 fn to_variant_with_parameters(variant: &mut Variant) -> Option<(Variant, Parameters)> {
@@ -91,7 +88,6 @@ fn create_unit_match_arm(description: String, ident: &Ident, variant: &Variant) 
     }
 }
 
-// TODO: use fields for message with parameters
 fn create_unnamed_match_arm(description: String, ident: &Ident, variant: &Variant, fields: &FieldsUnnamed) -> TokenStream2 {
     create_unnamed_variant_match_arm(description, fields, ident, variant)
 }
@@ -106,37 +102,22 @@ fn create_named_match_arm(description: String, ident: &Ident, variant: &Variant,
     }
 }
 
-// Todo: very similar to create_display_implementation_with_default
-fn create_display_implementation(item_enum: &ItemEnum, match_arms: Vec<TokenStream2>) -> TokenStream2 {
+fn create_display_implementation(item_enum: &ItemEnum, match_arms: Vec<TokenStream2>, default_message: Option<String>) -> TokenStream2 {
     let ident = &item_enum.ident;
     let generics = &item_enum.generics;
     let where_clause = &generics.where_clause;
-
+    let default = match default_message {
+        Some(m) => quote! {_ => write!(f, #m)},
+        None => quote! {}
+    };
     quote! {
         impl #generics std::fmt::Display for #ident #generics #where_clause {
             fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                 match self {
                     #(#match_arms)*
+                    #default
                 }
             }
         }
     }
 }
-
-fn create_display_implementation_with_default(item_enum: &ItemEnum, default_message: String, match_arms: Vec<TokenStream2>) -> TokenStream2 {
-    let ident = &item_enum.ident;
-    let generics = &item_enum.generics;
-    let where_clause = &generics.where_clause;
-
-    quote! {
-        impl #generics std::fmt::Display for #ident #generics #where_clause {
-            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                match self {
-                    #(#match_arms)*
-                    _ => write!(f, #default_message)
-                }
-            }
-        }
-    }
-}
-
