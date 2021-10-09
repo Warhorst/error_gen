@@ -9,6 +9,9 @@ use crate::common::*;
 use syn::__private::quote::__private::Ident;
 use crate::impl_from::*;
 
+const MESSAGE: &'static str = "message";
+const IMPL_FROM: &'static str = "impl_from";
+
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
 
@@ -26,18 +29,18 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
         .collect::<Vec<_>>();
 
     for (variant, parameters) in variants_with_parameters {
-        if parameters.value_for_name("derive_from").map_or(false, LitValue::bool_value) {
+        if parameters.value_for_name(IMPL_FROM).map_or(false, LitValue::bool_value) {
             from_implementations.push(create_from_implementation(&item_enum, &variant))
         }
 
-        if let Some(val) = parameters.value_for_name("description") {
+        if let Some(val) = parameters.value_for_name(MESSAGE) {
             display_match_arms.push(create_display_match_arm(val.string_value(), &item_enum.ident, &variant))
         }
     }
 
     let display_implementation = match display_match_arms.len() == item_enum.variants.len() {
         true => create_display_implementation(&item_enum, display_match_arms, None),
-        false => match enum_parameters.value_for_name("description") {
+        false => match enum_parameters.value_for_name(MESSAGE) {
             Some(val) => create_display_implementation(&item_enum, display_match_arms, Some(val.string_value())),
             None => panic!("Not all enum variants have a display message. Provide a default message at the enum definition.")
         }
