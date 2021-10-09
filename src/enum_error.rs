@@ -5,7 +5,7 @@ use syn::{Attribute, ItemEnum, Variant, AttributeArgs, FieldsNamed, FieldsUnname
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 use crate::parameters::Parameters;
-use crate::common::{attribute_is_error, create_named_write_parameters_enum, create_named_enum_variant_match_arm_parameters};
+use crate::common::*;
 use syn::__private::quote::__private::Ident;
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
@@ -92,10 +92,7 @@ fn create_unit_match_arm(description: String, ident: &Ident, variant: &Variant) 
 
 // TODO: use fields for message with parameters
 fn create_unnamed_match_arm(description: String, ident: &Ident, variant: &Variant, fields: &FieldsUnnamed) -> TokenStream2 {
-    let variant_ident = &variant.ident;
-    quote! {
-        #ident::#variant_ident(..) => write!(f, #description),
-    }
+    create_unnamed_variant_match_arm(description, fields, ident, variant)
 }
 
 fn create_named_match_arm(description: String, ident: &Ident, variant: &Variant, fields: &FieldsNamed) -> TokenStream2 {

@@ -33,17 +33,19 @@ mod struct_tests {
     #[error("Lifetimes and generics")]
     struct E7<'a, T>(&'a T) where T: Debug;
 
-    // TODO: Rename "description" to "message"
-    #[error]
+    // TODO: Rename "description" to "message" and "derive_from" to "impl_from"
+    #[error(description = "some default")]
     enum E8<T> where T: Debug {
-        #[error(description = "A foo occurred 1, 3")]
+        #[error(description = "A foo occurred {1}, {3}, {1}, {2}, {0}. Her some random number: 0.")]
         Foo(usize, f32, usize, u8),
         #[error(description = "A wild bar appeared: {some_val}, {some_other_val}")]
         Bar { some_val: f32, some_other_val: usize },
         #[error(description = "Generic and dangerous")]
         Baz(T),
         #[error(description = "This is some error")]
-        Oof
+        Oof,
+        #[error(derive_from)]
+        Rab(usize)
     }
 
     impl std::fmt::Display for E0 {
