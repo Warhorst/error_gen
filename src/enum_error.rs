@@ -18,18 +18,18 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     let where_clause = &generics.where_clause;
     let variants = &mut item_enum.variants;
 
-    let mut from_implementations = vec![];
 
     let variants_with_parameters = variants
         .iter_mut()
         .flat_map(|var| to_variant_with_parameters(var).into_iter())
         .collect::<Vec<_>>();
 
+    let mut from_data = FromImplData::new();
     let mut display_data = DisplayDataEnum::new_empty(&item_enum, enum_parameters.value_for_name(MESSAGE).map(LitValue::string_value));
 
     for (variant, parameters) in &variants_with_parameters {
         if parameters.value_for_name(IMPL_FROM).map_or(false, LitValue::bool_value) {
-            from_implementations.push(create_from_implementation(&item_enum, &variant))
+            from_data.add_data(&item_enum, &variant)
         }
 
         if let Some(m) = parameters.value_for_name(MESSAGE).map(LitValue::string_value) {
@@ -38,6 +38,7 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     }
 
     let display_implementation = display_data.to_display_implementation();
+    let from_implementations = from_data.create_from_implementations();
 
     let r = quote! {
         #[derive(Debug)] #item_enum
