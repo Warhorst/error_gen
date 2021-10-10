@@ -8,6 +8,7 @@ mod enum_error;
 mod parameters;
 mod common;
 mod impl_from;
+mod impl_display;
 
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {
@@ -19,5 +20,5 @@ pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {
         return enum_error::implement(parse_macro_input!(attributes as AttributeArgs), item_enum)
     }
 
-    panic!("The error attribute is only allowed on structs or enums")
+    panic!("The error attribute is only allowed on structs, enums and enum variants.")
 }
