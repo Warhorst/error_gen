@@ -5,6 +5,7 @@ use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct};
 use syn::__private::TokenStream2;
 use crate::common::*;
 use crate::parameters::Parameters;
+use crate::impl_display::DisplayDataStruct;
 
 const MESSAGE: &'static str = "message";
 
@@ -17,6 +18,7 @@ pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStre
     let generics = &item_struct.generics;
     let where_clause = &item_struct.generics.where_clause;
 
+    // let display_implementation = DisplayDataStruct::new(&item_struct, message_opt).to_display_implementation();
     let display_implementation = create_display_implementation(message_opt, ident, fields, generics);
 
     (quote! {

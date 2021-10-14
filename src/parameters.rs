@@ -2,6 +2,7 @@ use syn::{Lit, NestedMeta, Meta, Attribute, AttributeArgs};
 use syn::Lit::*;
 use std::collections::HashMap;
 use crate::common::*;
+use syn::Meta::*;
 
 /// Representation of attributes as key value pairs with names as key and primitives as values.
 pub struct Parameters {
@@ -31,7 +32,7 @@ impl Parameters {
                 syn::NestedMeta::Lit(_) => panic!("Unexpected literal in meta list")
             })
             .map(Self::meta_to_name_value)
-            .collect::<HashMap<_, _>>();
+            .collect();
 
         Parameters { values }
     }
@@ -41,17 +42,17 @@ impl Parameters {
     /// Meta lists are ignored.
     fn meta_to_name_value(meta: Meta) -> (String, LitValue) {
         match meta {
-            syn::Meta::NameValue(name_value) => {
+            NameValue(name_value) => {
                 let name = path_to_name(&name_value.path);
                 let value = LitValue::from(&name_value.lit);
                 (name, value)
             }
-            syn::Meta::Path(path) => {
+            Path(path) => {
                 let name = path_to_name(&path);
                 let value = LitValue::Boolean(true);
                 (name, value)
             }
-            syn::Meta::List(_) => panic!("Unexpected meta list")
+            List(_) => panic!("Unexpected meta list")
         }
     }
 

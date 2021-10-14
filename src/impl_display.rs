@@ -1,9 +1,76 @@
-use syn::{ItemEnum, Variant, FieldsNamed, FieldsUnnamed, Field};
+use syn::{ItemEnum, Variant, FieldsNamed, FieldsUnnamed, Field, ItemStruct, Index};
 use syn::__private::TokenStream2;
 use quote::{quote, format_ident};
 use syn::__private::quote::__private::Ident;
 use syn::Fields::*;
 use std::collections::HashMap;
+
+/// Holds the necessary information to generate a std::fmt::Display implementation for an struct.
+pub struct DisplayDataStruct<'a> {
+    item_struct: &'a ItemStruct,
+    message_opt: Option<String>
+}
+
+impl<'a> DisplayDataStruct<'a> {
+    pub fn new(item_struct: &'a ItemStruct, message_opt: Option<String>) -> Self {
+        DisplayDataStruct { item_struct, message_opt }
+    }
+
+    pub fn to_display_implementation(self) -> TokenStream2 {
+        let mut message = match self.message_opt {
+            Some(ref string) => string,
+            None => return quote! {}
+        };
+
+        let write_parameters = match &self.item_struct.fields {
+            Named(fields) => self.create_named_write_parameters(message, &fields),
+            Unnamed(fields) => self.create_positional_write_parameters(message, &fields),
+            Unit => vec![]
+        };
+
+        self.create_implementation_with_write_parameters(message, write_parameters)
+    }
+
+    pub fn create_named_write_parameters(&self, message: &String, fields: &FieldsNamed) -> Vec<TokenStream2> {
+        get_used_identifiers_in_string(message, fields)
+            .into_iter()
+            .map(|ident| quote! {, #ident = self.#ident})
+            .collect()
+    }
+
+    // TODO: The string needs to be changed. Reorganize
+    fn create_positional_write_parameters(&self, message: &String, fields: &FieldsUnnamed) -> Vec<TokenStream2> {
+        let mut parameters = vec![];
+        let mut ignored_fields = 0;
+        let mut message = message.clone();
+
+        for i in 0..fields.unnamed.len() {
+            let string = format!("{{{}}}", i);
+
+            if message.contains(&string) {
+                message = message.replace(&string, &format!("{{{}}}", i - ignored_fields));
+                let index = Index::from(i);
+                parameters.push(quote! {, self.#index});
+            } else {
+                ignored_fields += 1
+            }
+        }
+        parameters
+    }
+
+    fn create_implementation_with_write_parameters(&self, message: &String, parameters: Vec<TokenStream2>) -> TokenStream2 {
+        let ident = &self.item_struct.ident;
+        let generics = &self.item_struct.generics;
+        let where_clause = &generics.where_clause;
+        quote! {
+        impl #generics std::fmt::Display for #ident #generics #where_clause {
+            fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, #message #(#parameters)*)
+            }
+        }
+    }
+    }
+}
 
 /// Holds the necessary information to generate a std::fmt::Display implementation for an enum.
 pub struct DisplayDataEnum<'a> {
