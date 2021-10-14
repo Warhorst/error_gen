@@ -2,7 +2,7 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::{Attribute, ItemEnum, Variant, AttributeArgs};
-use crate::parameters::{Parameters, LitValue};
+use crate::parameters::Parameters;
 use crate::common::*;
 use crate::impl_from::*;
 use crate::impl_display::DisplayDataEnum;
@@ -25,14 +25,14 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
         .collect::<Vec<_>>();
 
     let mut from_data = FromImplData::new();
-    let mut display_data = DisplayDataEnum::new_empty(&item_enum, enum_parameters.value_for_name(MESSAGE).map(LitValue::string_value));
+    let mut display_data = DisplayDataEnum::new_empty(&item_enum, enum_parameters.string_for_name(MESSAGE));
 
     for (variant, parameters) in &variants_with_parameters {
-        if parameters.value_for_name(IMPL_FROM).map_or(false, LitValue::bool_value) {
+        if *parameters.bool_for_name(IMPL_FROM).get_or_insert(false) {
             from_data.add_data(&item_enum, &variant)
         }
 
-        if let Some(m) = parameters.value_for_name(MESSAGE).map(LitValue::string_value) {
+        if let Some(m) = parameters.string_for_name(MESSAGE) {
             display_data.add_match_arm_data(m.clone(), variant);
         }
     }

@@ -1,49 +1,29 @@
 use proc_macro::TokenStream;
 
 use quote::quote;
-use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct, NestedMeta};
+use syn::{AttributeArgs, Fields, Fields::*, Generics, Ident, Index, ItemStruct};
 use syn::__private::TokenStream2;
 use crate::common::*;
+use crate::parameters::Parameters;
+
+const MESSAGE: &'static str = "message";
 
 pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {
-    let display_string_opt = get_display_string(attr_args);
+    let parameters = Parameters::from_attribute_args(attr_args);
+    let message_opt = parameters.string_for_name(MESSAGE);
 
     let ident = &item_struct.ident;
     let fields = &item_struct.fields;
     let generics = &item_struct.generics;
     let where_clause = &item_struct.generics.where_clause;
 
-    let display_implementation = create_display_implementation(display_string_opt, ident, fields, generics);
+    let display_implementation = create_display_implementation(message_opt, ident, fields, generics);
 
     (quote! {
         #[derive(Debug)] #item_struct
         impl #generics std::error::Error for #ident #generics #where_clause {}
         #display_implementation
     }).into()
-}
-
-/// Return the display-string from the attribute parameters.
-///
-/// If no display string was provided, Display is not implemented for this Error. This is useful if you
-/// need more complex logic to implement Display.
-fn get_display_string(args: AttributeArgs) -> Option<String> {
-    let arg_amount = args.len();
-    if arg_amount > 1 { panic!("Too many arguments were provided to the 'error' attribute. Expected 0 or 1, got {}", arg_amount) }
-
-    match arg_amount {
-        0 => None,
-        _ => Some(get_string_from_meta(args.first().unwrap()))
-    }
-}
-
-fn get_string_from_meta(meta: &NestedMeta) -> String {
-    match meta {
-        syn::NestedMeta::Lit(literal) => match literal {
-            syn::Lit::Str(literal_string) => literal_string.value(),
-            _ => panic!("Argument of 'error' attribute must be a string literal!")
-        },
-        _ => panic!("Argument of 'error' attribute must be a string literal!")
-    }
 }
 
 fn create_display_implementation(display_string_opt: Option<String>, ident: &Ident, fields: &Fields, generics: &Generics) -> TokenStream2 {

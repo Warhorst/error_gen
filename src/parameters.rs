@@ -55,8 +55,12 @@ impl Parameters {
         }
     }
 
-    pub fn value_for_name(&self, name: &str) -> Option<&LitValue> {
-        self.values.get(name)
+    pub fn bool_for_name(&self, name: &str) -> Option<bool> {
+        self.values.get(name).map(LitValue::bool_value)
+    }
+
+    pub fn string_for_name(&self, name: &str) -> Option<String> {
+        self.values.get(name).map(LitValue::string_value)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -67,7 +71,7 @@ impl Parameters {
 /// syn::Lit describes a literal from a token stream.
 /// This is not very handy to use, for example when creating a literal value like 'true'.
 /// This LitValue enum fixes this issue by ignoring the token stream part and only wrapping the literal value.
-pub enum LitValue {
+enum LitValue {
     String(String),
     Boolean(bool),
 }

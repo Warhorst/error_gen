@@ -9,28 +9,28 @@ mod struct_tests {
     #[error]
     struct E0;
 
-    #[error("Unit struct")]
+    #[error(message = "Unit struct")]
     struct E1;
 
-    #[error("Tuple like struct with positional parameters {0}")]
+    #[error(message = "Tuple like struct with positional parameters {0}")]
     struct E2(usize);
 
-    #[error("Tuple like struct where positions are ignored {0} {2}")]
+    #[error(message = "Tuple like struct where positions are ignored {0} {2}")]
     struct E3(usize, usize, usize);
 
-    #[error("Struct with named fields. Reference them in the message by name {i}")]
+    #[error(message = "Struct with named fields. Reference them in the message by name {i}")]
     struct E4 {
         i: usize,
         j: usize,
     }
 
-    #[error("Generics. Constraints like 'T: Debug' need te be in a where-clause")]
+    #[error(message = "Generics. Constraints like 'T: Debug' need te be in a where-clause")]
     struct E5<T>(T) where T: Debug;
 
-    #[error("Lifetimes")]
+    #[error(message = "Lifetimes")]
     struct E6<'a>(&'a usize);
 
-    #[error("Lifetimes and generics")]
+    #[error(message = "Lifetimes and generics")]
     struct E7<'a, T>(&'a T) where T: Debug;
 
     #[error(message = "some default")]
