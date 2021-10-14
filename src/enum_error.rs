@@ -7,6 +7,7 @@ use crate::common::*;
 use crate::impl_from::*;
 use crate::impl_display::DisplayDataEnum;
 
+const ERROR_ATTRIBUTE: &'static str = "error";
 const MESSAGE: &'static str = "message";
 const IMPL_FROM: &'static str = "impl_from";
 
@@ -70,4 +71,8 @@ fn extract_error_attribute(attributes: &mut Vec<Attribute>) -> Option<Attribute>
             false => None
         })?;
     Some(attributes.remove(index))
+}
+
+pub fn attribute_is_error(attribute: &Attribute) -> bool {
+    path_to_name(&attribute.path) == ERROR_ATTRIBUTE
 }
