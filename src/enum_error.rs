@@ -19,7 +19,6 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     let where_clause = &generics.where_clause;
     let variants = &mut item_enum.variants;
 
-
     let variants_with_parameters = variants
         .iter_mut()
         .flat_map(|var| to_variant_with_parameters(var).into_iter())
@@ -41,16 +40,14 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     let display_implementation = display_data.to_display_implementation();
     let from_implementations = from_data.create_from_implementations();
 
-    let r = quote! {
+    (quote! {
         #[derive(Debug)] #item_enum
         impl #generics std::error::Error for #ident #generics #where_clause {}
 
         #(#from_implementations)*
 
         #display_implementation
-    };
-    println!("{}", r);
-    r.into()
+    }).into()
 }
 
 fn to_variant_with_parameters(variant: &mut Variant) -> Option<(Variant, Parameters)> {
