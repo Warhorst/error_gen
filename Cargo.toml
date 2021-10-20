@@ -9,6 +9,3 @@ proc-macro = true
 [dependencies]
 syn = {version = "1.0.76", features = ["full"]}
 quote = "1.0.9"
-
-[workspace]
-members = ["error_gen_test"]
