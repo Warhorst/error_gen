@@ -82,10 +82,22 @@ fn lifetimes_and_generics_works() {
 /// Check if the struct is a fully qualified Error.
 /// It implements all necessary traits if it is a valid parameter for this function.
 /// Also its Display-implementation should create the expected message.
-fn check_struct_implementation_works<E>(s: E, expected_message: &str)
-    where E: Error + Debug + Display
+fn check_struct_implementation_works<S>(s: S, expected_message: &str)
+    where S: Error + Debug + Display
 {
     assert_eq!(s.to_string(), expected_message);
+}
+
+/// If this method call does not produce a compile error, From was correctly
+/// implemented for the given type f.
+fn check_from_implementation_works<E, F>(f: F)
+    where E: Error + Debug + Display + From<F> {
+
+    let fun: fn(F) -> Result<(), E> = |f| {
+        Ok(f)?;
+        Ok(())
+    };
+    fun(f);
 }
 
 #[error(message = "some default")]
