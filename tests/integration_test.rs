@@ -89,15 +89,16 @@ fn check_struct_implementation_works<S>(s: S, expected_message: &str)
 }
 
 /// If this method call does not produce a compile error, From was correctly
-/// implemented for the given type f.
-fn check_from_implementation_works<E, F>(f: F)
-    where E: Error + Debug + Display + From<F> {
+/// implemented for the given type f. Also checks if the expected value
+/// was produced.
+fn check_from_implementation_works<E, F>(from_value: F, expected: E)
+    where E: Error + Debug + Display + From<F> + Eq {
 
     let fun: fn(F) -> Result<(), E> = |f| {
-        Ok(f)?;
+        Err(f)?;
         Ok(())
     };
-    fun(f);
+    assert_eq!(expected, fun(from_value).err().unwrap());
 }
 
 #[error(message = "some default")]
