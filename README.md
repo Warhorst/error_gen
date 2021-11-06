@@ -7,7 +7,7 @@ Imagine a complex method with multiple possible failures, like parsing an extern
 - parse the resource to a domain object
 - read a necessary value and check if it is valid
 
-A typical approach to this task is create an error for every single operation, like so
+A typical approach to this task is to create an error for every single operation, like so
 ``` rust
 struct NetworkError { pub response_code: usize }
 
@@ -16,7 +16,7 @@ struct ParseError { pub line: usize }
 struct InvalidValueError(pub f32)
 ```
 
-To create an error for the complex operation, an enum is created with it's variants holding the single error values, like so
+To create an error for the complex operation, an enum is created with its variants holding the single error values, like so
 
 ``` rust
 enum ComplexError {
@@ -36,7 +36,7 @@ fn complex_function() -> Result<f32, ComplexError> {
 }
 ```
 
-The problem: If we want a fully qualified error, every of our errors should implement the std::error::Error trait, which in turn requires std::fmt::Debug and std::fmt::Display. 'Debug' can be derived, but 'Error' and Display must be implemented manually. Also, to use the question mark operator like above, we need three extra std::convert::From implementations for 'ComplexError'.
+The problem: If we want a fully qualified error, every of our errors should implement the std::error::Error trait, which in turn requires std::fmt::Debug and std::fmt::Display. 'Debug' can be derived, but 'Error' and 'Display' must be implemented manually. Also, to use the question mark operator like above, we need three extra std::convert::From implementations for 'ComplexError'.
 
 In total, 11 additional impl-blocks (4 Error, 4 Display, 3 From) are required to model this (still quite simple) example. There are solutions to this problem, like the 'quick_error' crate, but I wanted a more elegant way to generate this boilerplate code. Being used to codegen-libraries like lombok for Java, I wanted to create something similar, resulting in the 'error' attribute.
 
