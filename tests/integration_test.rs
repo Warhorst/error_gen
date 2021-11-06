@@ -14,7 +14,7 @@ fn unit_no_message_works() {
         }
     }
 
-    check_struct_implementation_works(S, "unit message manual")
+    check_error_implementation_works(S, "unit message manual")
 }
 
 #[test]
@@ -22,7 +22,7 @@ fn unit_works() {
     #[error(message = "unit struct")]
     struct S;
 
-    check_struct_implementation_works(S, "unit struct")
+    check_error_implementation_works(S, "unit struct")
 }
 
 #[test]
@@ -30,7 +30,7 @@ fn tuple_works() {
     #[error(message = "tuple like {0}")]
     struct S(usize);
 
-    check_struct_implementation_works(S(42), "tuple like 42")
+    check_error_implementation_works(S(42), "tuple like 42")
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn tuple_multiple_works() {
     #[error(message = "tuple like multiple {0} {2}")]
     struct S(usize, usize, usize);
 
-    check_struct_implementation_works(S(41, 42, 43), "tuple like multiple 41 43")
+    check_error_implementation_works(S(41, 42, 43), "tuple like multiple 41 43")
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn named_fields_works() {
     }
 
     let s = S { i: 41, j: 42 };
-    check_struct_implementation_works(s, "named fields 41 42")
+    check_error_implementation_works(s, "named fields 41 42")
 }
 
 #[test]
@@ -58,7 +58,7 @@ fn generics_works() {
     #[error(message = "generics {0}")]
     struct S<T>(T) where T: Debug + Display;
 
-    check_struct_implementation_works(S(42), "generics 42")
+    check_error_implementation_works(S(42), "generics 42")
 }
 
 #[test]
@@ -67,7 +67,7 @@ fn lifetimes_works() {
     struct S<'a>(&'a usize);
 
     let i = 42;
-    check_struct_implementation_works(S(&i), "lifetimes 42")
+    check_error_implementation_works(S(&i), "lifetimes 42")
 }
 
 #[test]
@@ -76,16 +76,76 @@ fn lifetimes_and_generics_works() {
     struct S<'a, T>(&'a T) where T: Debug + Display;
 
     let i = 42;
-    check_struct_implementation_works(S(&i), "lifetimes and generics 42")
+    check_error_implementation_works(S(&i), "lifetimes and generics 42")
 }
 
-/// Check if the struct is a fully qualified Error.
+#[test]
+fn enum_default_message_works() {
+    #[error(message = "some default")]
+    enum E {
+        Foo,
+        Bar
+    }
+
+    check_error_implementation_works(E::Foo, "some default");
+    check_error_implementation_works(E::Bar, "some default")
+}
+
+#[test]
+fn enum_custom_message_works() {
+    #[error(message = "some default")]
+    enum E {
+        Foo,
+        #[error(message = "some custom for Bar")]
+        Bar
+    }
+
+    check_error_implementation_works(E::Foo, "some default");
+    check_error_implementation_works(E::Bar, "some custom for Bar")
+}
+
+#[test]
+fn enum_check_from_works() {
+    #[error(message = "some default")]
+    #[derive(Eq, PartialEq)]
+    enum E {
+        #[error(impl_from)]
+        Foo(usize)
+    }
+
+    check_error_implementation_works(E::Foo(42), "some default");
+    check_from_implementation_works(42, E::Foo(42))
+}
+
+#[test]
+fn enum_check_named_message_works() {
+    #[error]
+    enum E {
+        #[error(message = "Value: {val}")]
+        Foo{ val: usize }
+    }
+
+    check_error_implementation_works(E::Foo{ val: 42}, "Value: 42");
+}
+
+#[test]
+fn enum_check_positional_message_works() {
+    #[error]
+    enum E {
+        #[error(message = "Float: {1}, Int: {0}")]
+        Foo(usize, f32)
+    }
+
+    check_error_implementation_works(E::Foo(42, 420.5), "Float: 420.5, Int: 42");
+}
+
+/// Check if the given value is a fully qualified Error.
 /// It implements all necessary traits if it is a valid parameter for this function.
 /// Also its Display-implementation should create the expected message.
-fn check_struct_implementation_works<S>(s: S, expected_message: &str)
-    where S: Error + Debug + Display
+fn check_error_implementation_works<E>(e: E, expected_message: &str)
+    where E: Error + Debug + Display
 {
-    assert_eq!(s.to_string(), expected_message);
+    assert_eq!(e.to_string(), expected_message);
 }
 
 /// If this method call does not produce a compile error, From was correctly
@@ -99,18 +159,4 @@ fn check_from_implementation_works<E, F>(from_value: F, expected: E)
         Ok(())
     };
     assert_eq!(expected, fun(from_value).err().unwrap());
-}
-
-#[error(message = "some default")]
-enum E8<T> where T: Debug {
-    #[error(message = "A foo occurred {1}, {3}, {1}, {2}, {0}. Here some random number: 0.")]
-    Foo(usize, f32, usize, u8),
-    #[error(message = "A wild bar appeared: {some_val}, {some_other_val}")]
-    Bar { some_val: f32, some_other_val: usize },
-    #[error(message = "Generic and dangerous")]
-    Baz(T),
-    #[error(message = "This is some error")]
-    Oof,
-    #[error(impl_from)]
-    Rab(usize),
 }
