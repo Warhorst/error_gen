@@ -1,6 +1,6 @@
-use syn::{ItemEnum, Variant, FieldsNamed, FieldsUnnamed};
-use syn::__private::TokenStream2;
 use quote::quote;
+use syn::{FieldsNamed, FieldsUnnamed, ItemEnum, Variant};
+use syn::__private::TokenStream2;
 use syn::Fields::*;
 
 /// Create an implementation of the std::convert::From trait, based on the type of the enum variant.
@@ -37,14 +37,14 @@ impl<'a> FromImplData<'a> {
 
         let enum_ident = &item_enum.ident;
         let generics = &item_enum.generics;
-        let where_clause = &generics.where_clause;
+        let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         let variant_ident = &variant.ident;
         let field = fields.named.first().unwrap();
         let ty = &field.ty;
         let field_ident = field.ident.as_ref().unwrap();
 
         quote! {
-            impl #generics std::convert::From<#ty> for #enum_ident #generics #where_clause {
+            impl #impl_generics std::convert::From<#ty> for #enum_ident #type_generics #where_clause {
                 fn from(val: #ty) -> Self {
                     #enum_ident::#variant_ident{ #field_ident : val }
                 }
@@ -59,13 +59,13 @@ impl<'a> FromImplData<'a> {
 
         let enum_ident = &item_enum.ident;
         let generics = &item_enum.generics;
-        let where_clause = &generics.where_clause;
+        let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         let variant_ident = &variant.ident;
         let field = fields.unnamed.first().unwrap();
         let ty = &field.ty;
 
         quote! {
-            impl #generics std::convert::From<#ty> for #enum_ident #generics #where_clause {
+            impl #impl_generics std::convert::From<#ty> for #enum_ident #type_generics #where_clause {
                 fn from(val: #ty) -> Self {
                     #enum_ident::#variant_ident(val)
                 }

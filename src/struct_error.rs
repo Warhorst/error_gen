@@ -2,8 +2,9 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::{AttributeArgs, ItemStruct};
-use crate::parameters::Parameters;
+
 use crate::impl_display::DisplayDataStruct;
+use crate::parameters::Parameters;
 
 const MESSAGE: &'static str = "message";
 
@@ -13,13 +14,13 @@ pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStre
 
     let ident = &item_struct.ident;
     let generics = &item_struct.generics;
-    let where_clause = &item_struct.generics.where_clause;
+    let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
 
     let display_implementation = DisplayDataStruct::new(&item_struct, message_opt).to_display_implementation();
 
     (quote! {
         #[derive(Debug)] #item_struct
-        impl #generics std::error::Error for #ident #generics #where_clause {}
+        impl #impl_generics std::error::Error for #ident #type_generics #where_clause {}
         #display_implementation
     }).into()
 }

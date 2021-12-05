@@ -77,7 +77,6 @@ This will create any required implementation (Error, Display, From) with much le
 
 ## Downsides
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
-- You need to use where clauses when creating types with more complex generic definitions. 'struct Struct<T: Eq + Hash>' does not work, but 'struct Struct<T> where T: Eq + Hash' does
 
 ## Future plans
 - enable type definitions like 'struct Struct<T: Eq + Hash>' to be used with the 'error' attribute

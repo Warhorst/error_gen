@@ -1,7 +1,7 @@
-use std::fmt::{Debug, Formatter, Display};
+use std::error::Error;
+use std::fmt::{Debug, Display, Formatter};
 
 use error_gen::error;
-use std::error::Error;
 
 #[test]
 fn unit_no_message_works() {
@@ -56,6 +56,14 @@ fn named_fields_works() {
 #[test]
 fn generics_works() {
     #[error(message = "generics {0}")]
+    struct S<T: Debug + Display>(T);
+
+    check_error_implementation_works(S(42), "generics 42")
+}
+
+#[test]
+fn generics_where_clause_works() {
+    #[error(message = "generics {0}")]
     struct S<T>(T) where T: Debug + Display;
 
     check_error_implementation_works(S(42), "generics 42")
@@ -84,7 +92,7 @@ fn enum_default_message_works() {
     #[error(message = "some default")]
     enum E {
         Foo,
-        Bar
+        Bar,
     }
 
     check_error_implementation_works(E::Foo, "some default");
@@ -97,7 +105,7 @@ fn enum_custom_message_works() {
     enum E {
         Foo,
         #[error(message = "some custom for Bar")]
-        Bar
+        Bar,
     }
 
     check_error_implementation_works(E::Foo, "some default");
@@ -122,10 +130,10 @@ fn enum_check_named_message_works() {
     #[error]
     enum E {
         #[error(message = "Value: {val}")]
-        Foo{ val: usize }
+        Foo { val: usize }
     }
 
-    check_error_implementation_works(E::Foo{ val: 42}, "Value: 42");
+    check_error_implementation_works(E::Foo { val: 42 }, "Value: 42");
 }
 
 #[test]
@@ -137,6 +145,25 @@ fn enum_check_positional_message_works() {
     }
 
     check_error_implementation_works(E::Foo(42, 420.5), "Float: 420.5, Int: 42");
+}
+
+#[test]
+fn enum_check_generics_and_lifetimes_works() {
+    #[error]
+    #[derive(Eq, PartialEq)]
+    enum E<'a, A, B: Debug + Display> where A: Debug + Display {
+        #[error(message = "{0}", impl_from)]
+        Where(A),
+        #[error(message = "{0}")]
+        Generic(B),
+        #[error(message = "{0}")]
+        Lifetime(&'a usize),
+    }
+
+    check_error_implementation_works(E::<'_, usize, usize>::Where(42), "42");
+    check_error_implementation_works(E::<'_, usize, usize>::Generic(42), "42");
+    check_error_implementation_works(E::<'_, usize, usize>::Lifetime(&42), "42");
+    check_from_implementation_works(42, E::<'_, usize, usize>::Where(42))
 }
 
 /// Check if the given value is a fully qualified Error.
@@ -153,7 +180,6 @@ fn check_error_implementation_works<E>(e: E, expected_message: &str)
 /// was produced.
 fn check_from_implementation_works<E, F>(from_value: F, expected: E)
     where E: Error + Debug + Display + From<F> + Eq {
-
     let fun: fn(F) -> Result<(), E> = |f| {
         Err(f)?;
         Ok(())

@@ -1,9 +1,10 @@
-use syn::{ItemEnum, Variant, FieldsNamed, FieldsUnnamed, Field, ItemStruct, Index};
-use syn::__private::TokenStream2;
-use quote::{quote, format_ident};
-use syn::__private::quote::__private::Ident;
-use syn::Fields::*;
 use std::collections::HashMap;
+
+use quote::{format_ident, quote};
+use syn::{Field, FieldsNamed, FieldsUnnamed, Index, ItemEnum, ItemStruct, Variant};
+use syn::__private::quote::__private::Ident;
+use syn::__private::TokenStream2;
+use syn::Fields::*;
 
 /// Holds the necessary information to generate a std::fmt::Display implementation for an struct.
 pub struct DisplayDataStruct<'a> {
@@ -63,9 +64,9 @@ impl<'a> DisplayDataStruct<'a> {
     fn create_implementation_with_write_parameters(&self, message: &String, parameters: Vec<TokenStream2>) -> TokenStream2 {
         let ident = &self.item_struct.ident;
         let generics = &self.item_struct.generics;
-        let where_clause = &generics.where_clause;
+        let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         quote! {
-            impl #generics std::fmt::Display for #ident #generics #where_clause {
+            impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     write!(f, #message #(#parameters)*)
                 }
@@ -106,7 +107,7 @@ impl<'a> DisplayDataEnum<'a> {
 
         let ident = &self.item_enum.ident;
         let generics = &self.item_enum.generics;
-        let where_clause = &generics.where_clause;
+        let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
         let default = match match_arms.len() == self.item_enum.variants.len() {
             true => quote! {},
             false => match self.default_message {
@@ -116,7 +117,7 @@ impl<'a> DisplayDataEnum<'a> {
         };
 
         quote! {
-            impl #generics std::fmt::Display for #ident #generics #where_clause {
+            impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     match self {
                         #(#match_arms)*

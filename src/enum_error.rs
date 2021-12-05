@@ -1,11 +1,12 @@
 use proc_macro::TokenStream;
 
 use quote::quote;
-use syn::{Attribute, ItemEnum, Variant, AttributeArgs};
-use crate::parameters::Parameters;
+use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
+
 use crate::common::*;
-use crate::impl_from::*;
 use crate::impl_display::DisplayDataEnum;
+use crate::impl_from::*;
+use crate::parameters::Parameters;
 
 const ERROR_ATTRIBUTE: &'static str = "error";
 const MESSAGE: &'static str = "message";
@@ -14,9 +15,6 @@ const IMPL_FROM: &'static str = "impl_from";
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
 
-    let ident = &item_enum.ident;
-    let generics = &item_enum.generics;
-    let where_clause = &generics.where_clause;
     let variants = &mut item_enum.variants;
 
     let variants_with_parameters = variants
@@ -37,12 +35,15 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
         }
     }
 
+    let ident = &item_enum.ident;
+    let generics = &item_enum.generics;
+    let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
     let display_implementation = display_data.to_display_implementation();
     let from_implementations = from_data.create_from_implementations();
 
     (quote! {
         #[derive(Debug)] #item_enum
-        impl #generics std::error::Error for #ident #generics #where_clause {}
+        impl #impl_generics std::error::Error for #ident #type_generics #where_clause {}
 
         #(#from_implementations)*
 
