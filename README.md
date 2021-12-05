@@ -79,7 +79,6 @@ This will create any required implementation (Error, Display, From) with much le
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
 
 ## Future plans
-- enable type definitions like 'struct Struct<T: Eq + Hash>' to be used with the 'error' attribute
 - add the 'impl_from' parameter at enum level to implement 'From' for every variant
 - enable arbitrary expressions in message templates (to use more complex stuff like if-else or function calls)
 - improve error messages in general
