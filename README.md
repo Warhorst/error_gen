@@ -79,6 +79,9 @@ This will create any required implementation (Error, Display, From) with much le
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
 
 ## Future plans
-- add the 'impl_from' parameter at enum level to implement 'From' for every variant
+- implement "global configurations" for enums. This means
+  - 'impl_from' to implement From for all variants
+  - 'message' with template parameters which will be used for all variants (if possible)
 - enable arbitrary expressions in message templates (to use more complex stuff like if-else or function calls)
 - improve error messages in general
+- push 'error_gen' to crates.io 
