@@ -83,7 +83,7 @@ pub struct DisplayDataEnum<'a> {
 }
 
 impl<'a> DisplayDataEnum<'a> {
-    pub fn new_empty(item_enum: &'a ItemEnum, default_message: Option<String>) -> Self {
+    pub fn new(item_enum: &'a ItemEnum, default_message: Option<String>) -> Self {
         DisplayDataEnum {
             item_enum,
             default_message,
@@ -91,8 +91,10 @@ impl<'a> DisplayDataEnum<'a> {
         }
     }
 
-    pub fn add_match_arm_data(&mut self, message: String, variant: &'a Variant) {
-        self.match_arm_data.push(MatchArmData::new(message, &self.item_enum.ident, variant))
+    pub fn add_variant(&mut self, variant: &'a Variant, message_opt: Option<String>) {
+        if let Some(message) = message_opt {
+            self.match_arm_data.push(MatchArmData::new(message, &self.item_enum.ident, variant))
+        }
     }
 
     pub fn to_display_implementation(self) -> TokenStream2 {

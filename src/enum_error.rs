@@ -6,33 +6,23 @@ use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
 use crate::common::*;
 use crate::impl_display::DisplayDataEnum;
 use crate::impl_from::*;
-use crate::parameters::Parameters;
-
-const ERROR_ATTRIBUTE: &'static str = "error";
-const MESSAGE: &'static str = "message";
-const IMPL_FROM: &'static str = "impl_from";
+use crate::parameters::{ERROR_ATTRIBUTE, IMPL_FROM, MESSAGE, Parameters};
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
-    let enum_parameters = Parameters::from_attribute_args(attr_args);
-
+    let global_parameters = Parameters::from_attribute_args(attr_args);
     let variants = &mut item_enum.variants;
 
     let variants_with_parameters = variants
         .iter_mut()
-        .flat_map(|var| to_variant_with_parameters(var).into_iter())
+        .map(|var| to_variant_with_parameters(var))
         .collect::<Vec<_>>();
 
-    let mut from_data = FromImplData::new();
-    let mut display_data = DisplayDataEnum::new_empty(&item_enum, enum_parameters.string_for_name(MESSAGE));
+    let mut from_data = FromImplData::new(&item_enum, global_parameters.bool_for_name(IMPL_FROM));
+    let mut display_data = DisplayDataEnum::new(&item_enum, global_parameters.string_for_name(MESSAGE));
 
-    for (variant, parameters) in &variants_with_parameters {
-        if *parameters.bool_for_name(IMPL_FROM).get_or_insert(false) {
-            from_data.add_data(&item_enum, &variant)
-        }
-
-        if let Some(m) = parameters.string_for_name(MESSAGE) {
-            display_data.add_match_arm_data(m.clone(), variant);
-        }
+    for (variant, parameters_opt) in &variants_with_parameters {
+        from_data.add_variant(&variant, parameters_opt.as_ref().map(|p| p.bool_for_name(IMPL_FROM)).unwrap_or(false));
+        display_data.add_variant(variant, parameters_opt.as_ref().and_then(|p| p.string_for_name(MESSAGE)));
     }
 
     let ident = &item_enum.ident;
@@ -51,13 +41,11 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     }).into()
 }
 
-fn to_variant_with_parameters(variant: &mut Variant) -> Option<(Variant, Parameters)> {
-    let error_attribute = extract_error_attribute(&mut variant.attrs)?;
-    let parameters = Parameters::from_attribute(error_attribute);
-
-    if parameters.is_empty() { return None; }
-
-    Some((variant.clone(), parameters))
+fn to_variant_with_parameters(variant: &mut Variant) -> (Variant, Option<Parameters>) {
+    match extract_error_attribute(&mut variant.attrs) {
+        Some(attr) => (variant.clone(), Some(Parameters::from_attribute(attr))),
+        None => (variant.clone(), None)
+    }
 }
 
 fn extract_error_attribute(attributes: &mut Vec<Attribute>) -> Option<Attribute> {

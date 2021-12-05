@@ -4,9 +4,7 @@ use quote::quote;
 use syn::{AttributeArgs, ItemStruct};
 
 use crate::impl_display::DisplayDataStruct;
-use crate::parameters::Parameters;
-
-const MESSAGE: &'static str = "message";
+use crate::parameters::{MESSAGE, Parameters};
 
 pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {
     let parameters = Parameters::from_attribute_args(attr_args);

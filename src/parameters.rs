@@ -1,8 +1,14 @@
-use syn::{Lit, NestedMeta, Meta, Attribute, AttributeArgs};
-use syn::Lit::*;
 use std::collections::HashMap;
-use crate::common::*;
+
+use syn::{Attribute, AttributeArgs, Lit, Meta, NestedMeta};
+use syn::Lit::*;
 use syn::Meta::*;
+
+use crate::common::*;
+
+pub const ERROR_ATTRIBUTE: &'static str = "error";
+pub const MESSAGE: &'static str = "message";
+pub const IMPL_FROM: &'static str = "impl_from";
 
 /// Representation of attributes as key value pairs with names as key and primitives as values.
 pub struct Parameters {
@@ -56,16 +62,14 @@ impl Parameters {
         }
     }
 
-    pub fn bool_for_name(&self, name: &str) -> Option<bool> {
-        self.values.get(name).map(LitValue::bool_value)
+    /// Not setting this value and setting it to 'false' means the same, so
+    /// returning an Option<bool> is pointless here
+    pub fn bool_for_name(&self, name: &str) -> bool {
+        self.values.get(name).map(LitValue::bool_value).unwrap_or(false)
     }
 
     pub fn string_for_name(&self, name: &str) -> Option<String> {
         self.values.get(name).map(LitValue::string_value)
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.values.is_empty()
     }
 }
 

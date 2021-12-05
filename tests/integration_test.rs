@@ -166,6 +166,24 @@ fn enum_check_generics_and_lifetimes_works() {
     check_from_implementation_works(42, E::<'_, usize, usize>::Where(42))
 }
 
+#[test]
+fn check_global_impl_from_works() {
+    #[error(message = "Error", impl_from)]
+    #[derive(Clone, Eq, PartialEq)]
+    enum Z {
+        A(usize),
+        B(&'static str)
+    }
+
+    let a = Z::A(42);
+    let b = Z::B("42");
+
+    check_error_implementation_works(a.clone(), "Error");
+    check_error_implementation_works(b.clone(), "Error");
+    check_from_implementation_works(42, a);
+    check_from_implementation_works("42", b);
+}
+
 /// Check if the given value is a fully qualified Error.
 /// It implements all necessary traits if it is a valid parameter for this function.
 /// Also its Display-implementation should create the expected message.
