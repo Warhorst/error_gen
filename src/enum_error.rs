@@ -10,26 +10,25 @@ use crate::parameters::{ERROR_ATTRIBUTE, IMPL_FROM, MESSAGE, Parameters};
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let global_parameters = Parameters::from_attribute_args(attr_args);
-    let variants = &mut item_enum.variants;
-
-    let variants_with_parameters = variants
-        .iter_mut()
-        .map(|var| to_variant_with_parameters(var))
-        .collect::<Vec<_>>();
-
-    let mut from_data = FromImplData::new(&item_enum, global_parameters.bool_for_name(IMPL_FROM));
     let mut display_data = DisplayDataEnum::new(&item_enum, global_parameters.string_for_name(MESSAGE));
+    let mut from_data = FromImplData::new(&item_enum, global_parameters.bool_for_name(IMPL_FROM));
 
-    for (variant, parameters_opt) in &variants_with_parameters {
-        from_data.add_variant(&variant, parameters_opt.as_ref().map(|p| p.bool_for_name(IMPL_FROM)).unwrap_or(false));
-        display_data.add_variant(variant, parameters_opt.as_ref().and_then(|p| p.string_for_name(MESSAGE)));
-    }
+    item_enum.variants
+        .iter()
+        .map(|var| to_variant_with_parameters(var))
+        .for_each(|(variant, parameters_opt)| {
+            display_data.add_variant(variant, parameters_opt.as_ref().and_then(|p| p.string_for_name(MESSAGE)));
+            from_data.add_variant(variant, parameters_opt.as_ref().map(|p| p.bool_for_name(IMPL_FROM)).unwrap_or(false));
+        });
+
+    let display_implementation = display_data.to_display_implementation();
+    let from_implementations = from_data.to_from_implementations();
+
+    remove_variant_attributes(&mut item_enum);
 
     let ident = &item_enum.ident;
     let generics = &item_enum.generics;
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-    let display_implementation = display_data.to_display_implementation();
-    let from_implementations = from_data.create_from_implementations();
 
     (quote! {
         #[derive(Debug)] #item_enum
@@ -41,14 +40,14 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     }).into()
 }
 
-fn to_variant_with_parameters(variant: &mut Variant) -> (Variant, Option<Parameters>) {
-    match extract_error_attribute(&mut variant.attrs) {
-        Some(attr) => (variant.clone(), Some(Parameters::from_attribute(attr))),
-        None => (variant.clone(), None)
+fn to_variant_with_parameters(variant: &Variant) -> (&Variant, Option<Parameters>) {
+    match get_error_attribute(&variant.attrs) {
+        Some(attr) => (variant, Some(Parameters::from_attribute(attr))),
+        None => (variant, None)
     }
 }
 
-fn extract_error_attribute(attributes: &mut Vec<Attribute>) -> Option<Attribute> {
+fn get_error_attribute(attributes: &Vec<Attribute>) -> Option<&Attribute> {
     let index = attributes
         .iter()
         .enumerate()
@@ -56,7 +55,37 @@ fn extract_error_attribute(attributes: &mut Vec<Attribute>) -> Option<Attribute>
             true => Some(i),
             false => None
         })?;
-    Some(attributes.remove(index))
+    attributes.get(index)
+}
+
+// TODO: it might be unnecessary to remove the attributes. Compiler error: "expected non-macro attribute, found attribute macro `error`".
+//  Currently I always get an error when adding any kind of attribute to an enum variant. But if the attribute recognizes anything else than the
+//  error attribute, it could just return the TokenStream.
+//  ^
+//  |
+//  Update: Attributes on non items seem to be only allowed as helper attributes in custom derives
+//  (https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes). proc_macro_aatributes on the other hand are only allowed
+//  on items (https://doc.rust-lang.org/reference/items.html) and need to be removed manually.
+fn remove_variant_attributes(item_enum: &mut ItemEnum) {
+    item_enum.variants
+        .iter_mut()
+        .for_each(remove_error_attribute_from_variant)
+}
+
+/// Search the index of the error attribute in the given variants attributes.
+/// If the index could be found, remove the entry from the variants attributes.
+fn remove_error_attribute_from_variant(variant: &mut Variant) {
+    let index_opt = variant.attrs
+        .iter()
+        .enumerate()
+        .find_map(|(i, att)| match attribute_is_error(att) {
+            true => Some(i),
+            false => None
+        });
+
+    if let Some(i) = index_opt {
+        variant.attrs.remove(i);
+    }
 }
 
 pub fn attribute_is_error(attribute: &Attribute) -> bool {

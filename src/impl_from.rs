@@ -36,7 +36,7 @@ impl<'a> FromImplData<'a> {
         }
     }
 
-    pub fn create_from_implementations(self) -> Vec<TokenStream2> {
+    pub fn to_from_implementations(self) -> Vec<TokenStream2> {
         if !self.usage_errors.is_empty() {
             panic!("{}", self.usage_errors.into_iter().collect::<String>())
         }

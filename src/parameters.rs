@@ -16,7 +16,7 @@ pub struct Parameters {
 }
 
 impl Parameters {
-    pub fn from_attribute(attribute: Attribute) -> Self {
+    pub fn from_attribute(attribute: &Attribute) -> Self {
         let meta = attribute.parse_meta().unwrap();
 
         match meta {
