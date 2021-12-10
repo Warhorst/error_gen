@@ -1,7 +1,9 @@
-use proc_macro::TokenStream;
-use syn::{parse, ItemStruct, ItemEnum, parse_macro_input, AttributeArgs};
-
 extern crate syn;
+
+use proc_macro::TokenStream;
+
+use syn::{AttributeArgs, ItemEnum, ItemStruct, parse, parse_macro_input};
+
 
 mod struct_error;
 mod enum_error;
@@ -9,6 +11,7 @@ mod parameters;
 mod common;
 mod impl_from;
 mod impl_display;
+mod validator;
 
 /// Create fully qualified errors with the "error" attribute.
 ///
@@ -23,14 +26,14 @@ mod impl_display;
 ///
 /// # Usage on structs
 /// Add the attribute to the struct definition like this
-/// ```
+/// ``` text
 /// #[error(message = "Something went wrong!")]
 /// struct MyError {
 ///     faulty_value: usize
 /// }
 /// ```
 /// which will create an equivalent implementation to this
-/// ```
+/// ``` text
 /// use std::fmt::Formatter;
 ///
 /// #[derive(Debug)]
@@ -51,7 +54,7 @@ mod impl_display;
 ///
 /// As you can see, the 'message' parameter is used to generate the error message.
 /// To create more useful error messages, it is possible to use fields. For example
-/// ```
+/// ``` text
 /// #[error(message = "The unexpected value '{faulty_value}' was returned!")]
 /// struct MyError {
 ///     faulty_value: usize
@@ -61,7 +64,7 @@ mod impl_display;
 /// ```
 ///
 /// The same is true for structs with unnamed parameters, which are used by index. For example
-/// ```
+/// ``` text
 /// #[error(message = "The service returned {1} and {0}.")]
 /// struct MyError(usize, f32);
 ///
@@ -75,7 +78,7 @@ mod impl_display;
 /// # Usage on enums
 ///
 /// Add the attribute to the enum definition like this
-/// ```
+/// ``` text
 /// #[error(message = "Something went wrong")]
 /// enum MyError {
 ///     Unknown,
@@ -86,7 +89,7 @@ mod impl_display;
 /// }
 /// ```
 /// which will create an equivalent implementation to this
-/// ```
+/// ``` text
 /// use std::fmt::Formatter;
 /// use std::io::Error;
 ///

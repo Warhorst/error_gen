@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Deref;
 
 use syn::{Attribute, AttributeArgs, Lit, Meta, NestedMeta};
 use syn::Lit::*;
@@ -16,15 +17,27 @@ pub struct Parameters {
 }
 
 impl Parameters {
+    /// Create Parameters from an Attribute, like
+    ///
+    /// #[error(message = "AHHHH", impl_from)] <--
+    /// struct AnError;
+    ///
+    /// (only list-like attributes like above are valid)
     pub fn from_attribute(attribute: &Attribute) -> Self {
         let meta = attribute.parse_meta().unwrap();
 
         match meta {
             syn::Meta::List(list) => Self::from_nested_metas(list.nested),
-            _ => panic!("Expected meta list for attribute 'error'")
+            _ => panic!("Expected list-like attribute, like [error(param0 = \"foo\", param1 = false)]")
         }
     }
 
+    /// Create Parameters from AttributeArgs, which are just the values of a list-like Attribute.
+    /// Example
+    ///
+    /// #[error( <-- list-like Attribute
+    ///     message = "AHHH", impl_from <-- AttributeArgs
+    /// )]
     pub fn from_attribute_args(args: AttributeArgs) -> Self {
         Self::from_nested_metas(args)
     }
@@ -71,6 +84,56 @@ impl Parameters {
     pub fn string_for_name(&self, name: &str) -> Option<String> {
         self.values.get(name).map(LitValue::string_value)
     }
+
+    /// Return how many parameters are set.
+    pub fn size(&self) -> usize {
+        self.values.len()
+    }
+
+    /// Check if these parameters have a parameter with the given name.
+    pub fn has_parameter(&self, param: &str) -> bool {
+        self.values.contains_key(param)
+    }
+
+    /// Return an iterator over the names of this Parameters.
+    pub fn name_iter(&self) -> ParameterIter {
+        self.into_iter()
+    }
+}
+
+pub struct ParameterIter<'a> {
+    index: usize,
+    keys: Vec<&'a str>,
+}
+
+impl<'a> ParameterIter<'a> {
+    fn new(parameters: &'a Parameters) -> Self {
+        ParameterIter {
+            index: 0,
+            keys: parameters.values.keys().map(|key| key.deref()).collect(),
+        }
+    }
+}
+
+impl<'a> Iterator for ParameterIter<'a> {
+    type Item = &'a str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index == self.keys.len() { return None; }
+
+        let result = self.keys[self.index];
+        self.index += 1;
+        Some(result)
+    }
+}
+
+impl<'a> IntoIterator for &'a Parameters {
+    type Item = &'a str;
+    type IntoIter = ParameterIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        ParameterIter::new(self)
+    }
 }
 
 /// syn::Lit describes a literal from a token stream.
@@ -104,5 +167,67 @@ impl From<&Lit> for LitValue {
             Bool(lit_bool) => LitValue::Boolean(lit_bool.value),
             _ => panic!("Unexpected literal value")
         }
+    }
+}
+
+#[cfg(test)]
+mod parameters_tests {
+    use std::collections::HashMap;
+
+    use syn::Attribute;
+
+    use crate::parameters::{LitValue, Parameters};
+
+    #[test]
+    fn from_attribute_works() {
+        let attribute: Attribute = syn::parse_quote!(#[foo(bar = true)]);
+        let parameters = Parameters::from_attribute(&attribute);
+        assert_eq!(parameters.size(), 1);
+        assert_eq!(parameters.has_parameter("bar"), true);
+        assert_eq!(parameters.bool_for_name("bar"), true);
+    }
+
+    #[test]
+    #[should_panic]
+    fn from_attribute_path_like_fails() {
+        let attribute: Attribute = syn::parse_quote!(#[foo]);
+        Parameters::from_attribute(&attribute);
+    }
+
+    #[test]
+    #[should_panic]
+    fn from_attribute_key_value_like_fails() {
+        let attribute: Attribute = syn::parse_quote!(#[foo = true]);
+        Parameters::from_attribute(&attribute);
+    }
+
+    #[test]
+    fn size_works() {
+        let parameters = create_example_parameters();
+        assert_eq!(parameters.size(), 2)
+    }
+
+    #[test]
+    fn has_parameter_works() {
+        let parameters = create_example_parameters();
+        assert_eq!(parameters.has_parameter("foo"), true);
+        assert_eq!(parameters.has_parameter("baz"), true);
+        assert_eq!(parameters.has_parameter("oof"), false);
+    }
+
+    #[test]
+    fn name_iter_works() {
+        let parameters = create_example_parameters();
+        let names = parameters.name_iter().collect::<Vec<_>>();
+        assert_eq!(names.len(), parameters.size());
+        assert!(names.contains(&"foo"));
+        assert!(names.contains(&"baz"));
+    }
+
+    fn create_example_parameters() -> Parameters {
+        let mut values = HashMap::new();
+        values.insert("foo".to_string(), LitValue::String("bar".to_string()));
+        values.insert("baz".to_string(), LitValue::Boolean(true));
+        Parameters { values }
     }
 }

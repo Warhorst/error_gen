@@ -6,6 +6,8 @@ use syn::__private::quote::__private::Ident;
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 
+use crate::parameters::{MESSAGE, Parameters};
+
 /// Holds the necessary information to generate a std::fmt::Display implementation for an struct.
 pub struct DisplayDataStruct<'a> {
     item_struct: &'a ItemStruct,
@@ -91,8 +93,8 @@ impl<'a> DisplayDataEnum<'a> {
         }
     }
 
-    pub fn add_variant(&mut self, variant: &'a Variant, message_opt: Option<String>) {
-        if let Some(message) = message_opt {
+    pub fn add_variant(&mut self, variant: &'a Variant, parameters_opt: &Option<Parameters>) {
+        if let Some(message) = parameters_opt.as_ref().and_then(|params| params.string_for_name(MESSAGE)) {
             self.match_arm_data.push(MatchArmData::new(message, &self.item_enum.ident, variant))
         }
     }

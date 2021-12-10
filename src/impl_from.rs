@@ -3,7 +3,7 @@ use syn::{FieldsNamed, FieldsUnnamed, ItemEnum, Variant};
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 
-use crate::parameters::IMPL_FROM;
+use crate::parameters::{IMPL_FROM, Parameters};
 
 /// Create an implementation of the std::convert::From trait, based on the type of the enum variant.
 ///
@@ -24,7 +24,8 @@ impl<'a> FromImplData<'a> {
     ///
     /// The 'From' implementation is only generated if the global or variant setting is set to 'true'.
     /// To keep the code clean, adding '{crate::parameters::IMPL_FROM}' to the enum AND the variant is considered an error and will cause a panic.
-    pub fn add_variant(&mut self, variant: &'a Variant, impl_from_for_variant: bool) {
+    pub fn add_variant(&mut self, variant: &'a Variant, parameters_opt: &Option<Parameters>) {
+        let impl_from_for_variant = parameters_opt.as_ref().map(|params| params.bool_for_name(IMPL_FROM)).unwrap_or(false);
         if self.implement_global && impl_from_for_variant {
             let error = format!("Implementation of std::convert::From is enabled for all variants. Please remove parameter '{}' from variant '{}'.", IMPL_FROM, variant.ident);
             self.usage_errors.push(error);

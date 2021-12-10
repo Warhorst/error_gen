@@ -15,10 +15,10 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
 
     item_enum.variants
         .iter()
-        .map(|var| to_variant_with_parameters(var))
+        .map(to_variant_with_parameters)
         .for_each(|(variant, parameters_opt)| {
-            display_data.add_variant(variant, parameters_opt.as_ref().and_then(|p| p.string_for_name(MESSAGE)));
-            from_data.add_variant(variant, parameters_opt.as_ref().map(|p| p.bool_for_name(IMPL_FROM)).unwrap_or(false));
+            display_data.add_variant(variant, &parameters_opt);
+            from_data.add_variant(variant, &parameters_opt);
         });
 
     let display_implementation = display_data.to_display_implementation();
