@@ -88,6 +88,26 @@ fn lifetimes_and_generics_works() {
 }
 
 #[test]
+fn implement_from_for_named_works() {
+    #[error(message = "impl_from named: {val}", impl_from)]
+    #[derive(Eq, PartialEq)]
+    struct S {
+        val: usize,
+    }
+    check_error_implementation_works(S { val: 42 }, "impl_from named: 42");
+    check_from_implementation_works(42, S { val: 42 })
+}
+
+#[test]
+fn implement_from_for_unnamed_works() {
+    #[error(message = "impl_from unnamed: {0}", impl_from)]
+    #[derive(Eq, PartialEq)]
+    struct S(usize);
+    check_error_implementation_works(S(42), "impl_from unnamed: 42");
+    check_from_implementation_works(42, S(42))
+}
+
+#[test]
 fn enum_default_message_works() {
     #[error(message = "some default")]
     enum E {
@@ -172,7 +192,7 @@ fn check_global_impl_from_works() {
     #[derive(Clone, Eq, PartialEq)]
     enum Z {
         A(usize),
-        B(&'static str)
+        B(&'static str),
     }
 
     let a = Z::A(42);

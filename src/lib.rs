@@ -27,7 +27,7 @@ mod validator;
 /// # Usage on structs
 /// Add the attribute to the struct definition like this
 /// ``` text
-/// #[error(message = "Something went wrong!")]
+/// #[error(message = "Something went wrong!", impl_from)]
 /// struct MyError {
 ///     faulty_value: usize
 /// }
@@ -46,6 +46,12 @@ mod validator;
 /// impl std::fmt::Display for MyError {
 ///     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
 ///         write!(f, "Something went wrong!")
+///     }
+/// }
+///
+/// impl std::convert::From for MyError {
+///     fn from(val: usize) {
+///         MyError { faulty_value: val }
 ///     }
 /// }
 /// ```
@@ -74,6 +80,8 @@ mod validator;
 /// It is also possible to omit the 'message' parameter. This way, it is possible to implement
 /// std::fmt::Display manually.
 ///
+/// The 'impl_from' parameter can be used to generate implementations for std::convert::From.
+/// It is applicable for non unit structs with exactly one field.
 ///
 /// # Usage on enums
 ///
@@ -123,9 +131,10 @@ mod validator;
 /// any variant without a custom message. It can only be omitted if every variant has a custom message.
 /// Enum messages have the same templating features like struct messages.
 ///
-/// The 'impl_from' parameter is exclusive to enum variants. If set, a std::convert::From for the
-/// variant is created. This is very helpful if you want to use the question mark operator. This only works if the variant has exactly one field.
-/// 'impl_from' is interpreted as a boolean and can also be written as 'impl_from = true'.
+/// The 'impl_from' parameter can be added either to enums or variants. If set to a variant, a std::convert::From for this
+/// variant will be created. If it's added to the whole enum, error_gen tries to implement from for every variant. If at least
+/// one variant has more than one field, this fails. Its also invalid to add 'impl_from' to a variant and the whole enum
+/// and will create a panic, choose one.
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(item_struct) = parse::<ItemStruct>(item.clone()) {
