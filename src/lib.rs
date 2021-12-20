@@ -11,7 +11,6 @@ mod parameters;
 mod common;
 mod impl_from;
 mod impl_display;
-mod validator;
 
 /// Create fully qualified errors with the "error" attribute.
 ///

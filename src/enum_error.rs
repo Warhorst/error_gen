@@ -6,23 +6,28 @@ use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
 use crate::common::*;
 use crate::impl_display::DisplayDataEnum;
 use crate::impl_from::*;
-use crate::parameters::{ERROR_ATTRIBUTE, IMPL_FROM, MESSAGE, Parameters};
+use crate::parameters::{ERROR_ATTRIBUTE, MESSAGE, Parameters};
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
-    let global_parameters = Parameters::from_attribute_args(attr_args);
-    let mut display_data = DisplayDataEnum::new(&item_enum, global_parameters.string_for_name(MESSAGE));
-    let mut from_data = FromImplData::new(&item_enum, global_parameters.bool_for_name(IMPL_FROM));
+    let enum_parameters = Parameters::from_attribute_args(attr_args);
+    let mut display_data = DisplayDataEnum::new(&item_enum, enum_parameters.string_for_name(MESSAGE));
 
-    item_enum.variants
+    let variants_with_parameters = item_enum.variants
         .iter()
         .map(to_variant_with_parameters)
+        .collect::<Vec<_>>();
+
+    // TODO like From, build an implementer that uses the whole variants with parameters.
+    variants_with_parameters.iter()
         .for_each(|(variant, parameters_opt)| {
             display_data.add_variant(variant, &parameters_opt);
-            from_data.add_variant(variant, &parameters_opt);
         });
 
     let display_implementation = display_data.to_display_implementation();
-    let from_implementations = from_data.to_from_implementations();
+    let from_implementations = match EnumFromImplementer::new(&item_enum, &enum_parameters, &variants_with_parameters).implement() {
+        Ok(implementations) => implementations,
+        Err(errors) => panic!("Some errors occurred while implementing from for enum: {}", errors.into_iter().map(|e| format!("{},", e.to_string())).collect::<String>())
+    };
 
     remove_variant_attributes(&mut item_enum);
 
@@ -34,7 +39,7 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
         #[derive(Debug)] #item_enum
         impl #impl_generics std::error::Error for #ident #type_generics #where_clause {}
 
-        #(#from_implementations)*
+        #from_implementations
 
         #display_implementation
     }).into()
