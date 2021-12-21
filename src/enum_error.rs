@@ -4,29 +4,27 @@ use quote::quote;
 use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
 
 use crate::common::*;
-use crate::impl_display::DisplayDataEnum;
+use crate::impl_display::EnumDisplayImplementor;
 use crate::impl_from::*;
-use crate::parameters::{ERROR_ATTRIBUTE, MESSAGE, Parameters};
+use crate::parameters::{ERROR_ATTRIBUTE, Parameters};
+
+pub type VariantWithParams<'a> = (&'a Variant, Option<Parameters>);
 
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
-    let mut display_data = DisplayDataEnum::new(&item_enum, enum_parameters.string_for_name(MESSAGE));
 
     let variants_with_parameters = item_enum.variants
         .iter()
         .map(to_variant_with_parameters)
         .collect::<Vec<_>>();
 
-    // TODO like From, build an implementer that uses the whole variants with parameters.
-    variants_with_parameters.iter()
-        .for_each(|(variant, parameters_opt)| {
-            display_data.add_variant(variant, &parameters_opt);
-        });
-
-    let display_implementation = display_data.to_display_implementation();
+    let display_implementation = match EnumDisplayImplementor::new(&item_enum, &enum_parameters, &variants_with_parameters).implement() {
+        Ok(implementation) => implementation,
+        Err(e) => panic!("An error occurred while implementing std::fmt::Display for enum: {}", e)
+    };
     let from_implementations = match EnumFromImplementer::new(&item_enum, &enum_parameters, &variants_with_parameters).implement() {
         Ok(implementations) => implementations,
-        Err(errors) => panic!("Some errors occurred while implementing from for enum: {}", errors.into_iter().map(|e| format!("{},", e.to_string())).collect::<String>())
+        Err(errors) => panic!("Some errors occurred while implementing std::convert::From for enum: {}", errors.into_iter().map(|e| format!("{},", e.to_string())).collect::<String>())
     };
 
     remove_variant_attributes(&mut item_enum);
@@ -45,7 +43,7 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     }).into()
 }
 
-fn to_variant_with_parameters(variant: &Variant) -> (&Variant, Option<Parameters>) {
+fn to_variant_with_parameters(variant: &Variant) -> VariantWithParams {
     match get_error_attribute(&variant.attrs) {
         Some(attr) => (variant, Some(Parameters::from_attribute(attr))),
         None => (variant, None)

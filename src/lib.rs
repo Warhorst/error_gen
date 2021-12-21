@@ -120,20 +120,28 @@ mod impl_display;
 /// }
 ///
 /// impl std::convert::From<std::io::Error> for MyError {
-///     fn from(e: Error) -> Self {
+///     fn from(e: std::io::Error) -> Self {
 ///         MyError::ReadFileFailed(e)
 ///     }
 /// }
 /// ```
 ///
-/// The enum and any of it's variants can have the 'message' parameter. The value in the enum attribute is used for
-/// any variant without a custom message. It can only be omitted if every variant has a custom message.
+/// The enum and any of it's variants can have the 'message' parameter.
+/// 'message' on the enum level is used as default message. If every variant has a 'message', the default is considered an
+/// error to keep the code clean. It is also an error to omit the default and not provide a message for every variant. If
+/// neither the enum nor any of it's variants has 'message' set, Display will not be generated and can be implemented manually.
 /// Enum messages have the same templating features like struct messages.
 ///
 /// The 'impl_from' parameter can be added either to enums or variants. If set to a variant, a std::convert::From for this
-/// variant will be created. If it's added to the whole enum, error_gen tries to implement from for every variant. If at least
+/// variant will be created. If it's added to the enum itself, error_gen tries to implement from for every variant. If at least
 /// one variant has more than one field, this fails. Its also invalid to add 'impl_from' to a variant and the whole enum
 /// and will create a panic, choose one.
+///
+/// # Important
+/// error_gen will not check if
+///  your Display messages are valid
+///  OR your chosen items for the From implementation interfere with other code.
+/// This might lead to strange compiler errors due to wrong implementations.
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(item_struct) = parse::<ItemStruct>(item.clone()) {

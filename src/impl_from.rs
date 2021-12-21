@@ -9,6 +9,7 @@ use syn::Fields::*;
 use FailedItem::*;
 use FromImplementationError::*;
 
+use crate::enum_error::VariantWithParams;
 use crate::parameters::{IMPL_FROM, Parameters};
 
 pub struct StructFromImplementer<'a> {
@@ -82,11 +83,11 @@ impl<'a> StructFromImplementer<'a> {
 pub struct EnumFromImplementer<'a> {
     item_enum: &'a ItemEnum,
     enum_parameters: &'a Parameters,
-    variants_with_parameters: &'a Vec<(&'a Variant, Option<Parameters>)>,
+    variants_with_parameters: &'a Vec<VariantWithParams<'a>>,
 }
 
 impl<'a> EnumFromImplementer<'a> {
-    pub fn new(item_enum: &'a ItemEnum, enum_parameters: &'a Parameters, variants_with_parameters: &'a Vec<(&'a Variant, Option<Parameters>)>) -> Self {
+    pub fn new(item_enum: &'a ItemEnum, enum_parameters: &'a Parameters, variants_with_parameters: &'a Vec<VariantWithParams<'a>>) -> Self {
         EnumFromImplementer { item_enum, enum_parameters, variants_with_parameters }
     }
 

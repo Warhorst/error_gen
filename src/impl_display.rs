@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Formatter;
 
 use quote::{format_ident, quote};
 use syn::{Field, FieldsNamed, FieldsUnnamed, Index, ItemEnum, ItemStruct, Variant};
@@ -6,22 +7,28 @@ use syn::__private::quote::__private::Ident;
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 
+use DisplayImplementationError::*;
+
+use crate::enum_error::VariantWithParams;
 use crate::parameters::{MESSAGE, Parameters};
 
-/// Holds the necessary information to generate a std::fmt::Display implementation for an struct.
-pub struct DisplayDataStruct<'a> {
+pub struct StructDisplayImplementor<'a> {
     item_struct: &'a ItemStruct,
-    message_opt: Option<String>
+    parameters: &'a Parameters
 }
 
-impl<'a> DisplayDataStruct<'a> {
-    pub fn new(item_struct: &'a ItemStruct, message_opt: Option<String>) -> Self {
-        DisplayDataStruct { item_struct, message_opt }
+impl<'a> StructDisplayImplementor<'a> {
+    pub fn new(item_struct: &'a ItemStruct, parameters: &'a Parameters) -> Self {
+        StructDisplayImplementor { item_struct, parameters }
     }
 
-    pub fn to_display_implementation(self) -> TokenStream2 {
-        let mut message = match self.message_opt.clone() {
-            Some(string) => string,
+    /// Create a std::fmt::Display implementation for the given struct.
+    ///
+    /// If no message was provided, Display should be implemented manually and an empty
+    /// token stream is returned.
+    pub fn implement(self) -> TokenStream2 {
+        let mut message = match self.parameters.string_for_name(MESSAGE) {
+            Some(m) => m,
             None => return quote! {}
         };
 
@@ -77,82 +84,137 @@ impl<'a> DisplayDataStruct<'a> {
     }
 }
 
-/// Holds the necessary information to generate a std::fmt::Display implementation for an enum.
-pub struct DisplayDataEnum<'a> {
+pub struct EnumDisplayImplementor<'a> {
     item_enum: &'a ItemEnum,
-    default_message: Option<String>,
-    match_arm_data: Vec<MatchArmData<'a>>,
+    enum_parameters: &'a Parameters,
+    variants_with_parameters: &'a Vec<VariantWithParams<'a>>
 }
 
-impl<'a> DisplayDataEnum<'a> {
-    pub fn new(item_enum: &'a ItemEnum, default_message: Option<String>) -> Self {
-        DisplayDataEnum {
-            item_enum,
-            default_message,
-            match_arm_data: vec![],
-        }
+impl<'a> EnumDisplayImplementor<'a> {
+    pub fn new(item_enum: &'a ItemEnum, enum_parameters: &'a Parameters, variants_with_parameters: &'a Vec<VariantWithParams<'a>>) -> Self {
+        EnumDisplayImplementor { item_enum, enum_parameters, variants_with_parameters }
     }
 
-    pub fn add_variant(&mut self, variant: &'a Variant, parameters_opt: &Option<Parameters>) {
-        if let Some(message) = parameters_opt.as_ref().and_then(|params| params.string_for_name(MESSAGE)) {
-            self.match_arm_data.push(MatchArmData::new(message, &self.item_enum.ident, variant))
-        }
-    }
+    /// Create the std::fmt::Display implementation for the given enum and its variants.
+    ///
+    /// If neither the variants nor the enum itself provides a message, Display will not be implemented.
+    ///
+    /// This might fail if
+    ///  not every variant has a message set and no default was set
+    ///  OR every variant has a message and a default was set (this is an error to keep the code clean from useless parameters).
+    pub fn implement(self) -> Result<TokenStream2, DisplayImplementationError> {
+        let variants_with_message = self.get_variants_with_message();
 
-    pub fn to_display_implementation(self) -> TokenStream2 {
-        if self.default_message_required() {
-            panic!("Not all enum variants have a display message. Provide a default message at the enum definition.")
+        if self.display_should_not_be_implemented(&variants_with_message) {
+            return Ok(quote! {})
         }
 
-        let match_arms: Vec<TokenStream2> = self.match_arm_data
+        self.check_set_messages_are_valid(&variants_with_message)?;
+
+        let match_arms = variants_with_message
             .into_iter()
-            .map(MatchArmData::to_match_arm)
-            .collect();
+            .map(|(v, m)| self.create_match_arm(v, m))
+            .collect::<Vec<_>>();
 
+        Ok(self.create_implementation(match_arms))
+    }
+
+    /// Return a Vec of all variants witch a set Display message.
+    fn get_variants_with_message(&self) -> Vec<(&Variant, String)> {
+        self.variants_with_parameters
+            .iter()
+            .filter_map(|(v, p_opt)| match p_opt {
+                Some(p) => Some((v, p)),
+                _ => None
+            })
+            .filter_map(|(v, p)| match p.string_for_name(MESSAGE) {
+                Some(m) => Some((*v, m)),
+                _ => None
+            })
+            .collect()
+    }
+
+    /// If
+    ///  our enum does not have a Display message in it's parameters
+    ///  AND none of our variants has a Display message set
+    /// Display should not be implemented
+    fn display_should_not_be_implemented(&self, variants_with_message: &Vec<(&Variant, String)>) -> bool {
+        !self.enum_parameters.has_parameter(MESSAGE) && variants_with_message.is_empty()
+    }
+
+    /// Check the Display messages on all variants and the default one. It's an error if
+    ///  not every variant has a message and no default message was set
+    ///  OR
+    ///  all variants have a message, but a default message was provided anyways.
+    fn check_set_messages_are_valid(&self, variants_with_message: &Vec<(&Variant, String)>) -> Result<(), DisplayImplementationError> {
+        let num_variants = self.item_enum.variants.len();
+        let num_set_messages = variants_with_message.len();
+        let default_message_set = self.enum_parameters.has_parameter(MESSAGE);
+
+        if !default_message_set && num_variants != num_set_messages {
+            return Err(MissingMessages(self.item_enum.ident.clone()))
+        }
+
+        if default_message_set && num_variants == num_set_messages {
+            return Err(UnnecessaryDefaultMessage(self.item_enum.ident.clone()))
+        }
+
+        Ok(())
+    }
+
+    /// Create a match arm for the Display implementation with the given variant and it's message.
+    fn create_match_arm(&self, variant: &Variant, message: String) -> TokenStream2 {
+        match &variant.fields {
+            Named(fields) => MatchArmDataNamed::new(message, &self.item_enum.ident, &variant.ident, fields).to_match_arm(),
+            Unnamed(fields) => MatchArmDataUnnamed::new(message, &self.item_enum.ident, &variant.ident, fields).to_match_arm(),
+            Unit => MatchArmDataUnit::new(message, &self.item_enum.ident, &variant.ident).to_match_arm()
+        }
+    }
+
+    fn create_implementation(&self, match_arms: Vec<TokenStream2>) -> TokenStream2 {
         let ident = &self.item_enum.ident;
         let generics = &self.item_enum.generics;
         let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-        let default = match match_arms.len() == self.item_enum.variants.len() {
-            true => quote! {},
-            false => match self.default_message {
-                Some(m) => quote! {_ => write!(f, #m)},
-                None => panic!("Not all enum variants have a display message. Provide a default message at the enum definition.")
-            }
-        };
+        let default_match_arm = self.create_default_match_arm();
 
         quote! {
             impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     match self {
                         #(#match_arms)*
-                        #default
+                        #default_match_arm
                     }
                 }
             }
         }
     }
 
-    fn default_message_required(&self) -> bool {
-        self.match_arm_data.len() != self.item_enum.variants.len() && self.default_message.is_none()
+    /// Create the default match arm for the Display implementation, which is necessary
+    /// if not all variants have a message set.
+    ///
+    /// Note: EnumDisplayImplementor::check_set_messages_are_valid verifies if
+    /// some messages are missing and a default is set, so it's not done here again.
+    fn create_default_match_arm(&self) -> TokenStream2 {
+        match self.enum_parameters.string_for_name(MESSAGE) {
+            Some(m) => quote! {_ => write!(f, #m)},
+            None => quote! {}
+        }
     }
 }
 
-struct MatchArmData<'a> {
-    message: String,
-    enum_ident: &'a Ident,
-    variant: &'a Variant,
+#[derive(Debug)]
+pub enum DisplayImplementationError {
+    MissingMessages(Ident),
+    UnnecessaryDefaultMessage(Ident)
 }
 
-impl<'a> MatchArmData<'a> {
-    pub fn new(message: String, enum_ident: &'a Ident, variant: &'a Variant) -> Self {
-        MatchArmData { message, enum_ident, variant }
-    }
+impl std::error::Error for DisplayImplementationError {}
 
-    fn to_match_arm(self) -> TokenStream2 {
-        match &self.variant.fields {
-            Named(fields) => MatchArmDataNamed::new(self.message, self.enum_ident, &self.variant.ident, fields).to_match_arm(),
-            Unnamed(fields) => MatchArmDataUnnamed::new(self.message, self.enum_ident, &self.variant.ident, fields).to_match_arm(),
-            Unit => MatchArmDataUnit::new(self.message, self.enum_ident, &self.variant.ident).to_match_arm()
+impl std::fmt::Display for DisplayImplementationError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MissingMessages(ident) => write!(f, "Not all variants of enum '{}' have a Display message. Consider adding a default message at the enum item.", ident),
+            UnnecessaryDefaultMessage(ident) => write!(f, "All variants for enum '{}' have a Display message, but a default was provided anyways. Please remove.", ident)
         }
     }
 }

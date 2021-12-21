@@ -108,6 +108,24 @@ fn implement_from_for_unnamed_works() {
 }
 
 #[test]
+fn enum_no_display_message_works() {
+    #[error]
+    enum E {
+        Foo
+    }
+
+    impl std::fmt::Display for E {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            match self {
+                E::Foo => write!(f, "Foo")
+            }
+        }
+    }
+
+    check_error_implementation_works(E::Foo, "Foo");
+}
+
+#[test]
 fn enum_default_message_works() {
     #[error(message = "some default")]
     enum E {
