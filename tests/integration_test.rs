@@ -27,7 +27,7 @@ fn unit_works() {
 
 #[test]
 fn tuple_works() {
-    #[error(message = "tuple like {0}")]
+    #[error(message = "tuple like {e.0}")]
     struct S(usize);
 
     check_error_implementation_works(S(42), "tuple like 42")
@@ -35,7 +35,7 @@ fn tuple_works() {
 
 #[test]
 fn tuple_multiple_works() {
-    #[error(message = "tuple like multiple {0} {2}")]
+    #[error(message = "tuple like multiple {e.0} {e.2}")]
     struct S(usize, usize, usize);
 
     check_error_implementation_works(S(41, 42, 43), "tuple like multiple 41 43")
@@ -43,7 +43,7 @@ fn tuple_multiple_works() {
 
 #[test]
 fn named_fields_works() {
-    #[error(message = "named fields {i} {j}")]
+    #[error(message = "named fields {e.i} {e.j}")]
     struct S {
         i: usize,
         j: usize,
@@ -55,7 +55,7 @@ fn named_fields_works() {
 
 #[test]
 fn generics_works() {
-    #[error(message = "generics {0}")]
+    #[error(message = "generics {e.0}")]
     struct S<T: Debug + Display>(T);
 
     check_error_implementation_works(S(42), "generics 42")
@@ -63,7 +63,7 @@ fn generics_works() {
 
 #[test]
 fn generics_where_clause_works() {
-    #[error(message = "generics {0}")]
+    #[error(message = "generics {e.0}")]
     struct S<T>(T) where T: Debug + Display;
 
     check_error_implementation_works(S(42), "generics 42")
@@ -71,7 +71,7 @@ fn generics_where_clause_works() {
 
 #[test]
 fn lifetimes_works() {
-    #[error(message = "lifetimes {0}")]
+    #[error(message = "lifetimes {e.0}")]
     struct S<'a>(&'a usize);
 
     let i = 42;
@@ -80,7 +80,7 @@ fn lifetimes_works() {
 
 #[test]
 fn lifetimes_and_generics_works() {
-    #[error(message = "lifetimes and generics {0}")]
+    #[error(message = "lifetimes and generics {e.0}")]
     struct S<'a, T>(&'a T) where T: Debug + Display;
 
     let i = 42;
@@ -89,7 +89,7 @@ fn lifetimes_and_generics_works() {
 
 #[test]
 fn implement_from_for_named_works() {
-    #[error(message = "impl_from named: {val}", impl_from)]
+    #[error(message = "impl_from named: {e.val}", impl_from)]
     #[derive(Eq, PartialEq)]
     struct S {
         val: usize,
@@ -100,11 +100,22 @@ fn implement_from_for_named_works() {
 
 #[test]
 fn implement_from_for_unnamed_works() {
-    #[error(message = "impl_from unnamed: {0}", impl_from)]
+    #[error(message = "impl_from unnamed: {e.0}", impl_from)]
     #[derive(Eq, PartialEq)]
     struct S(usize);
     check_error_implementation_works(S(42), "impl_from unnamed: 42");
     check_from_implementation_works(42, S(42))
+}
+
+#[test]
+fn complex_message_expressions_works() {
+    // #[error(message = "condition: { if e.i > 42 {\"more than 42\"} else {\"less than 42\"} }")]
+    #[derive(Eq, PartialEq)]
+    struct S {
+        i: usize,
+        j: usize,
+        k: usize
+    }
 }
 
 #[test]

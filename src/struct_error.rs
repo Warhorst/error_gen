@@ -2,8 +2,8 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::{AttributeArgs, ItemStruct};
+use crate::impl_display_new::struct_implementor::StructDisplayImplementor;
 
-use crate::impl_display::StructDisplayImplementor;
 use crate::parameters::Parameters;
 use crate::impl_from::StructFromImplementer;
 

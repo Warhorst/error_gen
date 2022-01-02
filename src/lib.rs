@@ -1,6 +1,7 @@
 extern crate syn;
 
 use proc_macro::TokenStream;
+use std::fmt::{Debug, Display};
 
 use syn::{AttributeArgs, ItemEnum, ItemStruct, parse, parse_macro_input};
 
@@ -11,6 +12,7 @@ mod parameters;
 mod common;
 mod impl_from;
 mod impl_display;
+mod impl_display_new;
 
 /// Create fully qualified errors with the "error" attribute.
 ///
@@ -145,12 +147,52 @@ mod impl_display;
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {
     if let Ok(item_struct) = parse::<ItemStruct>(item.clone()) {
-        return struct_error::implement(parse_macro_input!(attributes as AttributeArgs), item_struct)
+        return struct_error::implement(parse_macro_input!(attributes as AttributeArgs), item_struct);
     }
 
     if let Ok(item_enum) = parse::<ItemEnum>(item) {
-        return enum_error::implement(parse_macro_input!(attributes as AttributeArgs), item_enum)
+        return enum_error::implement(parse_macro_input!(attributes as AttributeArgs), item_enum);
     }
 
     panic!("The error attribute is only allowed on structs, enums and enum variants.")
 }
+
+// TODO: Delete
+#[derive(Debug)]
+enum E<'a, T: Display + Debug> {
+    Foo { val: &'a mut String},
+    Bar(usize),
+    Baz,
+    Oof(T)
+}
+
+impl<'a, T: Display + Debug> std::error::Error for E<'a, T> {}
+
+impl<'a, T: Display + Debug> std::fmt::Display for E<'a, T> {
+    #[allow(unused_variables)]
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            eg @ E::Foo { val } => {
+                #[allow(dead_code)]
+                struct Foo<'z> { val: &'z &'z mut String }
+                let e = Foo {val};
+                write!(f, "Value: {}", e.val)
+            },
+            eg @ E::Bar(e0) => {
+                struct Bar<'a>(&'a usize);
+                let e = Bar(e0);
+                write!(f, "Value: {}", e.0)
+            },
+            eg @ E::Baz => write!(f, "Wololo"),
+            eg @ E::Oof(e0) => {
+                struct Oof<'a, T>(&'a T);
+                let e = Oof(e0);
+                write!(f, "oof {}", bar(e.0))
+            }
+        }
+    }
+}
+
+fn foo(_e: &E<usize>) -> usize {42}
+
+fn bar<T>(_val: T) -> usize where T: Debug + Display {42}

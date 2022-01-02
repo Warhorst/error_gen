@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fmt::Formatter;
 
 use quote::{format_ident, quote};
-use syn::{Field, FieldsNamed, FieldsUnnamed, Index, ItemEnum, ItemStruct, Variant};
+use syn::{Field, FieldsNamed, FieldsUnnamed, ItemEnum, Variant};
 use syn::__private::quote::__private::Ident;
 use syn::__private::TokenStream2;
 use syn::Fields::*;
@@ -11,78 +11,6 @@ use DisplayImplementationError::*;
 
 use crate::enum_error::VariantWithParams;
 use crate::parameters::{MESSAGE, Parameters};
-
-pub struct StructDisplayImplementor<'a> {
-    item_struct: &'a ItemStruct,
-    parameters: &'a Parameters
-}
-
-impl<'a> StructDisplayImplementor<'a> {
-    pub fn new(item_struct: &'a ItemStruct, parameters: &'a Parameters) -> Self {
-        StructDisplayImplementor { item_struct, parameters }
-    }
-
-    /// Create a std::fmt::Display implementation for the given struct.
-    ///
-    /// If no message was provided, Display should be implemented manually and an empty
-    /// token stream is returned.
-    pub fn implement(self) -> TokenStream2 {
-        let mut message = match self.parameters.string_for_name(MESSAGE) {
-            Some(m) => m,
-            None => return quote! {}
-        };
-
-        match &self.item_struct.fields {
-            Named(fields) => {
-                let params = self.create_named_write_parameters(&message, &fields);
-                self.create_implementation_with_write_parameters(&message, params)
-            },
-            Unnamed(fields) => {
-                let params = self.create_positional_write_parameters(&mut message, &fields);
-                self.create_implementation_with_write_parameters(&message, params)
-            },
-            Unit => self.create_implementation_with_write_parameters(&message, vec![])
-        }
-    }
-
-    pub fn create_named_write_parameters(&self, message: &String, fields: &FieldsNamed) -> Vec<TokenStream2> {
-        get_used_identifiers_in_string(message, fields)
-            .into_iter()
-            .map(|ident| quote! {, #ident = self.#ident})
-            .collect()
-    }
-
-    fn create_positional_write_parameters(&self, message: &mut String, fields: &FieldsUnnamed) -> Vec<TokenStream2> {
-        let mut parameters = vec![];
-        let mut ignored_fields = 0;
-
-        for i in 0..fields.unnamed.len() {
-            let string = format!("{{{}}}", i);
-
-            if message.contains(&string) {
-                *message = message.replace(&string, &format!("{{{}}}", i - ignored_fields));
-                let index = Index::from(i);
-                parameters.push(quote! {, self.#index});
-            } else {
-                ignored_fields += 1
-            }
-        }
-        parameters
-    }
-
-    fn create_implementation_with_write_parameters(&self, message: &String, parameters: Vec<TokenStream2>) -> TokenStream2 {
-        let ident = &self.item_struct.ident;
-        let generics = &self.item_struct.generics;
-        let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
-        quote! {
-            impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
-                fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    write!(f, #message #(#parameters)*)
-                }
-            }
-        }
-    }
-}
 
 pub struct EnumDisplayImplementor<'a> {
     item_enum: &'a ItemEnum,
