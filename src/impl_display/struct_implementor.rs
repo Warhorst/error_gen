@@ -1,7 +1,8 @@
 use quote::quote;
 use syn::__private::TokenStream2;
 use syn::ItemStruct;
-use crate::impl_display_new::write_implementor::WriteImplementor;
+
+use crate::impl_display::write_implementor::WriteImplementor;
 use crate::parameters::{MESSAGE, Parameters};
 
 pub struct StructDisplayImplementor<'a> {
@@ -16,7 +17,7 @@ impl<'a> StructDisplayImplementor<'a> {
 
     pub fn implement(self) -> TokenStream2 {
         let write_implementation = match self.parameters.string_for_name(MESSAGE) {
-            Some(m) => WriteImplementor::new(m).implement(),
+            Some(m) => WriteImplementor::new().implement(m),
             None => return quote! {}
         };
 

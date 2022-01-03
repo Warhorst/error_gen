@@ -189,7 +189,7 @@ fn enum_check_named_message_works() {
 fn enum_check_positional_message_works() {
     #[error]
     enum E {
-        #[error(message = "Float: {1}, Int: {0}")]
+        #[error(message = "Float: {_1}, Int: {_0}")]
         Foo(usize, f32)
     }
 
@@ -201,11 +201,11 @@ fn enum_check_generics_and_lifetimes_works() {
     #[error]
     #[derive(Eq, PartialEq)]
     enum E<'a, A, B: Debug + Display> where A: Debug + Display {
-        #[error(message = "{0}", impl_from)]
+        #[error(message = "{_0}", impl_from)]
         Where(A),
-        #[error(message = "{0}")]
+        #[error(message = "{_0}")]
         Generic(B),
-        #[error(message = "{0}")]
+        #[error(message = "{_0}")]
         Lifetime(&'a usize),
     }
 

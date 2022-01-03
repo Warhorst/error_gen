@@ -46,22 +46,22 @@ A more detailed description on how to use this attribute in general is documente
 To use our 'complex_method' like shown, add the 'error' attribute like so
 
 ``` rust
-#[error(message = "The external server returned code {response_code} instead of 200.")]
+#[error(message = "The external server returned code {e.response_code} instead of 200.")]
 struct NetworkError { pub response_code: usize }
 
-#[error(message = "Syntax error in line {line}.")]
+#[error(message = "Syntax error in line {e.line}.")]
 struct ParseError { pub line: usize }
 
-#[error(message = "Invalid value, expected '42' but got {0}.")]
+#[error(message = "Invalid value, expected '42' but got {e.0}.")]
 struct InvalidValueError(pub f32)
 
-#[error]
+#[error(impl_from)]
 enum ComplexError {
-    #[error(message = "Error while receiving the external file: {0}", impl_from)]
+    #[error(message = "Error while receiving the external file: {_0}")]
     Network(NetworkError),
-    #[error(message = "Error while parsing the file: {0}", impl_from)]
+    #[error(message = "Error while parsing the file: {_0}")]
     Parsing(ParseError),
-    #[error(message = "Error while retreiving the value: {0}", impl_from)]
+    #[error(message = "Error while retreiving the value: {_0}")]
     InvalidValue(InvalidValueError)
 }
 
@@ -79,9 +79,5 @@ This will create any required implementation (Error, Display, From) with much le
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
 
 ## Future plans
-- implement "global configurations" for enums. This means
-  - 'impl_from' to implement From for all variants
-  - 'message' with template parameters which will be used for all variants (if possible)
-- enable arbitrary expressions in message templates (to use more complex stuff like if-else or function calls)
 - improve error messages in general
 - push 'error_gen' to crates.io 

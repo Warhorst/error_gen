@@ -2,26 +2,22 @@ use quote::quote;
 use syn::__private::TokenStream2;
 
 pub struct WriteImplementor {
-    message: String,
     current_expression: Option<String>,
     expressions: Vec<String>,
     current_depth: usize,
 }
 
 impl WriteImplementor {
-    pub fn new(message: String) -> Self {
+    pub fn new() -> Self {
         WriteImplementor {
-            message,
             current_expression: None,
             expressions: vec![],
             current_depth: 0,
         }
     }
 
-    pub fn implement(mut self) -> TokenStream2 {
-        let message_clone = self.message.clone();
-
-        let new_message: String = message_clone
+    pub fn implement(mut self, message: String) -> TokenStream2 {
+        let new_message: String = message
             .chars()
             .filter(|c| match c {
                 '{' => self.handle_opening_parenthesis(*c),
@@ -111,18 +107,22 @@ impl WriteImplementor {
 
 #[cfg(test)]
 mod tests {
-    use crate::impl_display_new::write_implementor::WriteImplementor;
+    use crate::common::assert_tokens_are_equal;
+    use crate::impl_display::write_implementor::WriteImplementor;
 
     #[test]
     fn implement_works() {
         let message = "some complex stuff: {e.foo()}, {if b {42} else {43}}".to_string();
-        let tokens = WriteImplementor::new(message).implement();
-
-        let expected = r#"write!(f, "some complex stuff: {}, {}", e.foo(), if b {42} else {43})"#.to_string();
-        assert_eq!(remove_whitespace(expected), remove_whitespace(tokens.to_string()))
+        let ts = WriteImplementor::new().implement(message).to_string();
+        let expected = r#"write!(f, "some complex stuff: {}, {}", e.foo(), if b {42} else {43})"#;
+        assert_tokens_are_equal(ts, expected)
     }
 
-    fn remove_whitespace(s: String) -> String {
-        s.chars().filter(|c| !c.is_whitespace()).collect()
+    #[test]
+    fn implement_multiple_expressions_works() {
+        let message = "complex: {{let mut i = 0; i += 1; i}}".to_string();
+        let ts = WriteImplementor::new().implement(message).to_string();
+        let expected = r#"write!(f, "complex: {}", {let mut i = 0; i += 1; i})"#;
+        assert_tokens_are_equal(ts, expected)
     }
 }

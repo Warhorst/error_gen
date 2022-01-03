@@ -4,7 +4,7 @@ use quote::quote;
 use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
 
 use crate::common::*;
-use crate::impl_display::EnumDisplayImplementor;
+use crate::impl_display::enum_implementor::EnumDisplayImplementor;
 use crate::impl_from::*;
 use crate::parameters::{ERROR_ATTRIBUTE, Parameters};
 
@@ -61,12 +61,7 @@ fn get_error_attribute(attributes: &Vec<Attribute>) -> Option<&Attribute> {
     attributes.get(index)
 }
 
-// TODO: it might be unnecessary to remove the attributes. Compiler error: "expected non-macro attribute, found attribute macro `error`".
-//  Currently I always get an error when adding any kind of attribute to an enum variant. But if the attribute recognizes anything else than the
-//  error attribute, it could just return the TokenStream.
-//  ^
-//  |
-//  Update: Attributes on non items seem to be only allowed as helper attributes in custom derives
+//  Attributes on non items seem to be only allowed as helper attributes in custom derives
 //  (https://doc.rust-lang.org/reference/procedural-macros.html#derive-macro-helper-attributes). proc_macro_aatributes on the other hand are only allowed
 //  on items (https://doc.rust-lang.org/reference/items.html) and need to be removed manually.
 fn remove_variant_attributes(item_enum: &mut ItemEnum) {

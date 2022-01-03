@@ -1,12 +1,11 @@
 use quote::quote;
-use syn::__private::TokenStream2;
-use syn::Fields::*;
 use syn::{ItemEnum, Variant};
+use syn::__private::TokenStream2;
 
 use crate::enum_error::VariantWithParams;
-use crate::impl_display_new::DisplayImplementationError;
-use crate::impl_display_new::DisplayImplementationError::*;
-use crate::impl_display_new::write_implementor::WriteImplementor;
+use crate::impl_display::DisplayImplementationError;
+use crate::impl_display::DisplayImplementationError::*;
+use crate::impl_display::match_arm_implementor::MatchArmImplementor;
 use crate::parameters::{MESSAGE, Parameters};
 
 pub struct EnumDisplayImplementor<'a> {
@@ -38,7 +37,7 @@ impl<'a> EnumDisplayImplementor<'a> {
 
         let match_arms = variants_with_message
             .into_iter()
-            .map(|(v, m)| self.create_match_arm(v, m))
+            .map(|(v, m)| MatchArmImplementor::new(&self.item_enum.ident, &m).implement_for(v))
             .collect::<Vec<_>>();
 
         Ok(self.create_implementation(match_arms))
@@ -87,22 +86,6 @@ impl<'a> EnumDisplayImplementor<'a> {
         Ok(())
     }
 
-    fn create_match_arm(&self, variant: &Variant, message: String) -> TokenStream2 {
-        let write_implementation = WriteImplementor::new(message).implement();
-        let enum_ident = &self.item_enum.ident;
-        let variant_ident = &variant.ident;
-
-        let ts = match variant.fields {
-            Named(_) => quote! {{..}},
-            Unnamed(_) => quote! {(..)},
-            Unit => quote! {}
-        };
-
-        quote! {
-            e @ #enum_ident::#variant_ident#ts => #write_implementation,
-        }
-    }
-
     fn create_implementation(&self, match_arms: Vec<TokenStream2>) -> TokenStream2 {
         let ident = &self.item_enum.ident;
         let generics = &self.item_enum.generics;
@@ -113,7 +96,7 @@ impl<'a> EnumDisplayImplementor<'a> {
             impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
                     match self {
-                        #(#match_arms)*
+                        #(#match_arms,)*
                         #default_match_arm
                     }
                 }
@@ -128,7 +111,7 @@ impl<'a> EnumDisplayImplementor<'a> {
     /// some messages are missing and a default is set, so it's not done here again.
     fn create_default_match_arm(&self) -> TokenStream2 {
         match self.enum_parameters.string_for_name(MESSAGE) {
-            Some(m) => quote! {_ => write!(f, #m)},
+            Some(m) => MatchArmImplementor::new(&self.item_enum.ident, &m).implement_default(),
             None => quote! {}
         }
     }

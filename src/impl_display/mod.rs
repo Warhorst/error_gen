@@ -2,12 +2,12 @@ use std::fmt::Formatter;
 
 use syn::Ident;
 
-use crate::impl_display_new::DisplayImplementationError::*;
+use crate::impl_display::DisplayImplementationError::*;
 
 pub mod struct_implementor;
 pub mod enum_implementor;
 pub mod write_implementor;
-pub mod variant_struct_implementor;
+mod match_arm_implementor;
 
 #[derive(Debug)]
 pub enum DisplayImplementationError {

@@ -2,10 +2,10 @@ use proc_macro::TokenStream;
 
 use quote::quote;
 use syn::{AttributeArgs, ItemStruct};
-use crate::impl_display_new::struct_implementor::StructDisplayImplementor;
 
-use crate::parameters::Parameters;
+use crate::impl_display::struct_implementor::StructDisplayImplementor;
 use crate::impl_from::StructFromImplementer;
+use crate::parameters::Parameters;
 
 pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStream {
     let parameters = Parameters::from_attribute_args(attr_args);
