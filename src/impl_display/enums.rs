@@ -5,7 +5,7 @@ use syn::__private::TokenStream2;
 use crate::enum_error::VariantWithParams;
 use crate::impl_display::DisplayImplementationError;
 use crate::impl_display::DisplayImplementationError::*;
-use crate::impl_display::match_arm_implementor::MatchArmImplementor;
+use crate::impl_display::match_arm::MatchArmImplementor;
 use crate::parameters::{MESSAGE, Parameters};
 
 pub struct EnumDisplayImplementor<'a> {

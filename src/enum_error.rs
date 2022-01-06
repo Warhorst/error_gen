@@ -4,12 +4,18 @@ use quote::quote;
 use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
 
 use crate::common::*;
-use crate::impl_display::enum_implementor::EnumDisplayImplementor;
-use crate::impl_from::*;
+use crate::impl_display::enums::EnumDisplayImplementor;
+use crate::impl_from::enums::EnumFromImplementer;
 use crate::parameters::{ERROR_ATTRIBUTE, Parameters};
 
 pub type VariantWithParams<'a> = (&'a Variant, Option<Parameters>);
 
+/// Generate the implementations for a given enum to be a fully qualified and
+/// usable error. This means
+///
+/// - std::error::Error is implemented
+/// - std::fmt::Debug and Display are implemented
+/// - std::convert::From is implemented (if possible) to allow the usage of the ?-operator
 pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
 

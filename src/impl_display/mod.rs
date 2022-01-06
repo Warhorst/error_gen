@@ -4,10 +4,10 @@ use syn::Ident;
 
 use crate::impl_display::DisplayImplementationError::*;
 
-pub mod struct_implementor;
-pub mod enum_implementor;
-pub mod write_implementor;
-mod match_arm_implementor;
+pub mod structs;
+pub mod enums;
+pub mod write;
+mod match_arm;
 
 #[derive(Debug)]
 pub enum DisplayImplementationError {

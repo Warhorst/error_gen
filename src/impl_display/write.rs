@@ -16,6 +16,13 @@ impl WriteImplementor {
         }
     }
 
+    /// Creates an implementation of a write! macro call for a given message.
+    /// The message can contain expressions in braces, which will be used
+    /// to fill these spaces. Example:
+    ///
+    /// "This is my value: {e.critical_string_value()}"
+    /// will become
+    /// write!{f, "This is my value {}", e.critical_string_value()}
     pub fn implement(mut self, message: String) -> TokenStream2 {
         let new_message: String = message
             .chars()
@@ -108,7 +115,7 @@ impl WriteImplementor {
 #[cfg(test)]
 mod tests {
     use crate::common::assert_tokens_are_equal;
-    use crate::impl_display::write_implementor::WriteImplementor;
+    use crate::impl_display::write::WriteImplementor;
 
     #[test]
     fn implement_works() {

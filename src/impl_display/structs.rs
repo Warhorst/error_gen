@@ -2,7 +2,7 @@ use quote::quote;
 use syn::__private::TokenStream2;
 use syn::ItemStruct;
 
-use crate::impl_display::write_implementor::WriteImplementor;
+use crate::impl_display::write::WriteImplementor;
 use crate::parameters::{MESSAGE, Parameters};
 
 pub struct StructDisplayImplementor<'a> {

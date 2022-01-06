@@ -3,7 +3,7 @@ use syn::{FieldsNamed, FieldsUnnamed, Ident, Variant};
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 
-use crate::impl_display::write_implementor::WriteImplementor;
+use crate::impl_display::write::WriteImplementor;
 
 /// Creates match arms for match expressions in an enums std::fmt::Display implementation.
 pub struct MatchArmImplementor<'a> {
@@ -80,7 +80,7 @@ mod tests {
     use syn::{parse_quote, Variant};
 
     use crate::common::assert_tokens_are_equal;
-    use crate::impl_display::match_arm_implementor::MatchArmImplementor;
+    use crate::impl_display::match_arm::MatchArmImplementor;
 
     #[test]
     fn implement_default_works() {
