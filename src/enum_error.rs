@@ -1,12 +1,11 @@
-use proc_macro::TokenStream;
-
 use quote::quote;
 use syn::{Attribute, AttributeArgs, ItemEnum, Variant};
+use syn::__private::TokenStream2;
 
 use crate::common::*;
 use crate::impl_display::enums::EnumDisplayImplementor;
 use crate::impl_from::enums::EnumFromImplementer;
-use crate::parameters::{ERROR_ATTRIBUTE, Parameters};
+use crate::parameters::Parameters;
 
 pub type VariantWithParams<'a> = (&'a Variant, Option<Parameters>);
 
@@ -16,7 +15,7 @@ pub type VariantWithParams<'a> = (&'a Variant, Option<Parameters>);
 /// - std::error::Error is implemented
 /// - std::fmt::Debug and Display are implemented
 /// - std::convert::From is implemented (if possible) to allow the usage of the ?-operator
-pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream {
+pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStream2 {
     let enum_parameters = Parameters::from_attribute_args(attr_args);
 
     let variants_with_parameters = item_enum.variants
@@ -39,14 +38,14 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
     let generics = &item_enum.generics;
     let (impl_generics, type_generics, where_clause) = generics.split_for_impl();
 
-    (quote! {
+    quote! {
         #[derive(Debug)] #item_enum
         impl #impl_generics std::error::Error for #ident #type_generics #where_clause {}
 
         #from_implementations
 
         #display_implementation
-    }).into()
+    }
 }
 
 fn to_variant_with_parameters(variant: &Variant) -> VariantWithParams {
@@ -90,8 +89,4 @@ fn remove_error_attribute_from_variant(variant: &mut Variant) {
     if let Some(i) = index_opt {
         variant.attrs.remove(i);
     }
-}
-
-pub fn attribute_is_error(attribute: &Attribute) -> bool {
-    path_to_name(&attribute.path) == ERROR_ATTRIBUTE
 }

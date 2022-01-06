@@ -79,8 +79,8 @@ impl<'a> MatchArmImplementor<'a> {
 mod tests {
     use syn::{parse_quote, Variant};
 
-    use crate::common::assert_tokens_are_equal;
     use crate::impl_display::match_arm::MatchArmImplementor;
+    use crate::test_helper::assert_tokens_are_equal;
 
     #[test]
     fn implement_default_works() {

@@ -114,8 +114,8 @@ impl WriteImplementor {
 
 #[cfg(test)]
 mod tests {
-    use crate::common::assert_tokens_are_equal;
     use crate::impl_display::write::WriteImplementor;
+    use crate::test_helper::assert_tokens_are_equal;
 
     #[test]
     fn implement_works() {
