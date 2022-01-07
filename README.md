@@ -46,13 +46,13 @@ A more detailed description on how to use this attribute in general is documente
 To use our 'complex_method' like shown, add the 'error' attribute like so
 
 ``` rust
-#[error(message = "The external server returned code {e.response_code} instead of 200.")]
+#[error(message = "The external server returned code {self.response_code} instead of 200.")]
 struct NetworkError { pub response_code: usize }
 
-#[error(message = "Syntax error in line {e.line}.")]
+#[error(message = "Syntax error in line {self.line}.")]
 struct ParseError { pub line: usize }
 
-#[error(message = "Invalid value, expected '42' but got {e.0}.")]
+#[error(message = "Invalid value, expected '42' but got {self.0}.")]
 struct InvalidValueError(pub f32)
 
 #[error(impl_from)]
@@ -79,5 +79,4 @@ This will create any required implementation (Error, Display, From) with much le
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
 
 ## Future plans
-- improve error messages in general
 - push 'error_gen' to crates.io 

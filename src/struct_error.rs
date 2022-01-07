@@ -35,11 +35,11 @@ pub fn implement(attr_args: AttributeArgs, item_struct: ItemStruct) -> TokenStre
 
 #[cfg(test)]
 mod tests {
-    use crate::assert_implementation_as_expected;
+    use crate::assert_struct_implementation_as_expected;
 
     #[test]
     fn named_no_parameters() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S {
@@ -60,7 +60,7 @@ mod tests {
 
     #[test]
     fn named_no_fields_no_parameters() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S {
@@ -79,7 +79,7 @@ mod tests {
 
     #[test]
     fn unnamed_no_parameters() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S (usize);
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn unnamed_no_fields_no_parameters() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S ();
@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn unit_no_parameters() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S;
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn other_attributes_remain() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 #[derive(Clone)]
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn lifetimes_remain() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S<'a> (&'a usize);
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn generics_remain() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S<A: Clone, B> (A, B) where B: Clone;
@@ -183,7 +183,7 @@ mod tests {
 
     #[test]
     fn const_generics_remain() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error]
                 struct S<const C: usize> (C);
@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn named_impl_from() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S {
@@ -228,7 +228,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "'std::convert::From' cannot be implemented for struct 'S', as it has not exactly one field.")]
     fn named_impl_from_no_fields_should_panic() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S {}
@@ -243,7 +243,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "'std::convert::From' cannot be implemented for struct 'S', as it has not exactly one field.")]
     fn named_impl_from_two_fields_should_panic() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S {one: usize, two: usize}
@@ -257,7 +257,7 @@ mod tests {
 
     #[test]
     fn unnamed_impl_from() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S (usize);
@@ -281,7 +281,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "'std::convert::From' cannot be implemented for struct 'S', as it has not exactly one field.")]
     fn unnamed_impl_from_no_fields_should_panic() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S();
@@ -296,7 +296,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "'std::convert::From' cannot be implemented for struct 'S', as it has not exactly one field.")]
     fn unnamed_impl_from_two_fields_should_panic() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S(usize, usize);
@@ -311,7 +311,7 @@ mod tests {
     #[test]
     #[should_panic(expected = "'std::convert::From' cannot be implemented for struct 'S', as it has not exactly one field.")]
     fn unit_impl_from_should_panic() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(impl_from)]
                 struct S;
@@ -325,9 +325,9 @@ mod tests {
 
     #[test]
     fn named_impl_display() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
-                #[error(message = "My foo value: {e.foo}")]
+                #[error(message = "My foo value: {self.foo}")]
                 struct S {
                     foo: usize
                 }
@@ -343,8 +343,7 @@ mod tests {
 
                 impl std::fmt::Display for S {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        let e = self;
-                        write!(f, "My foo value: {}", e.foo)
+                        write!(f, "My foo value: {}", self.foo)
                     }
                 }
             }
@@ -353,9 +352,9 @@ mod tests {
 
     #[test]
     fn unnamed_impl_display() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
-                #[error(message = "My single value: {e.0}")]
+                #[error(message = "My single value: {self.0}")]
                 struct S (usize);
             }
 
@@ -367,8 +366,7 @@ mod tests {
 
                 impl std::fmt::Display for S {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        let e = self;
-                        write!(f, "My single value: {}", e.0)
+                        write!(f, "My single value: {}", self.0)
                     }
                 }
             }
@@ -377,7 +375,7 @@ mod tests {
 
     #[test]
     fn unit_impl_display() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
                 #[error(message = "Something went wrong")]
                 struct S;
@@ -391,7 +389,6 @@ mod tests {
 
                 impl std::fmt::Display for S {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        let e = self;
                         write!(f, "Something went wrong")
                     }
                 }
@@ -401,9 +398,9 @@ mod tests {
 
     #[test]
     fn named_impl_from_and_display() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
-                #[error(message = "My foo value: {e.foo}", impl_from)]
+                #[error(message = "My foo value: {self.foo}", impl_from)]
                 struct S {
                     foo: usize
                 }
@@ -419,8 +416,7 @@ mod tests {
 
                 impl std::fmt::Display for S {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        let e = self;
-                        write!(f, "My foo value: {}", e.foo)
+                        write!(f, "My foo value: {}", self.foo)
                     }
                 }
 
@@ -435,9 +431,9 @@ mod tests {
 
     #[test]
     fn unnamed_impl_from_and_display() {
-        assert_implementation_as_expected!(
+        assert_struct_implementation_as_expected!(
             item: {
-                #[error(message = "My single value: {e.0}", impl_from)]
+                #[error(message = "My single value: {self.0}", impl_from)]
                 struct S (usize);
             }
 
@@ -449,8 +445,7 @@ mod tests {
 
                 impl std::fmt::Display for S {
                     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                        let e = self;
-                        write!(f, "My single value: {}", e.0)
+                        write!(f, "My single value: {}", self.0)
                     }
                 }
 
@@ -468,7 +463,7 @@ mod tests {
     /// Generates the code and compares the token streams (as strings) with
     /// each other.
     #[macro_export]
-    macro_rules! assert_implementation_as_expected {
+    macro_rules! assert_struct_implementation_as_expected {
         (item: {$($item_struct:tt)*}  expected: {$($expected:tt)*}) => {
             {
                 let mut item_struct: syn::ItemStruct = syn::parse_quote!($($item_struct)*);

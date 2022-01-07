@@ -20,9 +20,7 @@ impl<'a> MatchArmImplementor<'a> {
         let write_implementation = WriteImplementor::new().implement(self.message.to_string());
 
         quote! {
-            _ => {
-                let e = self; #write_implementation
-            }
+            _ => #write_implementation
         }
     }
 
@@ -44,7 +42,7 @@ impl<'a> MatchArmImplementor<'a> {
         let write_implementation = WriteImplementor::new().implement(self.message.to_string());
 
         quote! {
-            e @ #enum_ident :: #variant_ident { #(#field_names,)* } => #write_implementation
+           #enum_ident :: #variant_ident { #(#field_names,)* } => #write_implementation
         }
     }
 
@@ -61,7 +59,7 @@ impl<'a> MatchArmImplementor<'a> {
         let write_implementation = WriteImplementor::new().implement(self.message.to_string());
 
         quote! {
-            e @ #enum_ident :: #variant_ident ( #(#field_names,)* ) => #write_implementation
+            #enum_ident :: #variant_ident ( #(#field_names,)* ) => #write_implementation
         }
     }
 
@@ -70,7 +68,7 @@ impl<'a> MatchArmImplementor<'a> {
         let write_implementation = WriteImplementor::new().implement(self.message.to_string());
 
         quote! {
-            e @ #enum_ident :: #variant_ident => #write_implementation
+            #enum_ident :: #variant_ident => #write_implementation
         }
     }
 }
@@ -86,7 +84,7 @@ mod tests {
     fn implement_default_works() {
         let message = "something default: {print_cool_message()}";
         let ts = implement_default(message);
-        let expected = r#"_ => { let e = self; write!(f, "something default: {}", print_cool_message()) }"#;
+        let expected = r#"_ => write!(f, "something default: {}", print_cool_message())"#;
         assert_tokens_are_equal(ts, expected)
     }
 
@@ -96,7 +94,7 @@ mod tests {
         let message = "Print the val: {val}";
 
         let ts = implement_for(var, message);
-        let expected = r#"e @ Enum::Foo { val, } => write!(f, "Print the val: {}", val)"#;
+        let expected = r#"Enum::Foo { val, } => write!(f, "Print the val: {}", val)"#;
         assert_tokens_are_equal(ts, expected)
     }
 
@@ -106,17 +104,17 @@ mod tests {
         let message = "Print the val: {_0}";
 
         let ts = implement_for(var, message);
-        let expected = r#"e @ Enum::Foo( _0, ) => write!(f, "Print the val: {}", _0)"#;
+        let expected = r#"Enum::Foo( _0, ) => write!(f, "Print the val: {}", _0)"#;
         assert_tokens_are_equal(ts, expected)
     }
 
     #[test]
     fn implement_unit_works() {
         let var = parse_quote!(Foo);
-        let message = "Print the enum: {e}";
+        let message = "Print the enum: {self}";
 
         let ts = implement_for(var, message);
-        let expected = r#"e @ Enum::Foo => write!(f, "Print the enum: {}", e)"#;
+        let expected = r#"Enum::Foo => write!(f, "Print the enum: {}", self)"#;
         assert_tokens_are_equal(ts, expected)
     }
 

@@ -3,9 +3,8 @@ use syn::{FieldsNamed, FieldsUnnamed, ItemStruct};
 use syn::__private::TokenStream2;
 use syn::Fields::*;
 
-use crate::impl_from::FailedItem::Struct;
 use crate::impl_from::FromImplementationError;
-use crate::impl_from::FromImplementationError::NotExactlyOneField;
+use crate::impl_from::FromImplementationError::StructNotExactlyOneField;
 use crate::parameters::{IMPL_FROM, Parameters};
 
 pub struct StructFromImplementer<'a> {
@@ -30,13 +29,13 @@ impl<'a> StructFromImplementer<'a> {
         match &self.item_struct.fields {
             Named(ref fields) => self.implement_for_named(fields),
             Unnamed(ref fields) => self.implement_for_unnamed(fields),
-            Unit => Err(NotExactlyOneField(Struct(self.item_struct.ident.clone())))
+            Unit => Err(StructNotExactlyOneField(self.item_struct.ident.clone()))
         }
     }
 
     fn implement_for_named(self, fields: &FieldsNamed) -> Result<TokenStream2, FromImplementationError> {
         if fields.named.len() != 1 {
-            return Err(NotExactlyOneField(Struct(self.item_struct.ident.clone())));
+            return Err(StructNotExactlyOneField(self.item_struct.ident.clone()));
         }
 
         let struct_ident = &self.item_struct.ident;
@@ -57,7 +56,7 @@ impl<'a> StructFromImplementer<'a> {
 
     fn implement_for_unnamed(self, fields: &FieldsUnnamed) -> Result<TokenStream2, FromImplementationError> {
         if fields.unnamed.len() != 1 {
-            return Err(NotExactlyOneField(Struct(self.item_struct.ident.clone())));
+            return Err(StructNotExactlyOneField(self.item_struct.ident.clone()));
         }
 
         let struct_ident = &self.item_struct.ident;

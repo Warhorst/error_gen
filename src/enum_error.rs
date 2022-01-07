@@ -25,11 +25,11 @@ pub fn implement(attr_args: AttributeArgs, mut item_enum: ItemEnum) -> TokenStre
 
     let display_implementation = match EnumDisplayImplementor::new(&item_enum, &enum_parameters, &variants_with_parameters).implement() {
         Ok(implementation) => implementation,
-        Err(e) => panic!("An error occurred while implementing std::fmt::Display for enum: {}", e)
+        Err(e) => panic!("{}", e)
     };
     let from_implementations = match EnumFromImplementer::new(&item_enum, &enum_parameters, &variants_with_parameters).implement() {
-        Ok(implementations) => implementations,
-        Err(errors) => panic!("Some errors occurred while implementing std::convert::From for enum: {}", errors.into_iter().map(|e| format!("{},", e.to_string())).collect::<String>())
+        Ok(implementation) => implementation,
+        Err(e) => panic!("{}", e)
     };
 
     remove_variant_attributes(&mut item_enum);
@@ -88,5 +88,468 @@ fn remove_error_attribute_from_variant(variant: &mut Variant) {
 
     if let Some(i) = index_opt {
         variant.attrs.remove(i);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::assert_enum_implementation_as_expected;
+
+    #[test]
+    fn no_parameters() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(usize),
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(usize),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+            }
+        )
+    }
+
+    #[test]
+    fn no_parameters_no_fields() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    Named {},
+                    Unnamed(),
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {},
+                    Unnamed(),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+            }
+        )
+    }
+
+    #[test]
+    fn other_attributes_remain() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                #[derive(Clone)]
+                enum E {
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                #[derive(Clone)]
+                enum E {
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+            }
+        )
+    }
+
+    #[test]
+    fn lifetimes_remain() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E<'a> {
+                    Unnamed(&'a usize)
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E<'a> {
+                    Unnamed(&'a usize)
+                }
+
+                impl<'a> std::error::Error for E<'a> {}
+            }
+        )
+    }
+
+    #[test]
+    fn generics_remain() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E<T> {
+                    Unnamed(T)
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E<T> {
+                    Unnamed(T)
+                }
+
+                impl<T> std::error::Error for E<T> {}
+            }
+        )
+    }
+
+    #[test]
+    fn const_generics_remain() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E<const C: usize> {
+                    Unnamed(C)
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E<const C: usize> {
+                    Unnamed(C)
+                }
+
+                impl<const C: usize> std::error::Error for E<C> {}
+            }
+        )
+    }
+
+    #[test]
+    fn named_unnamed_impl_from() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    #[error(impl_from)]
+                    Named {foo: usize},
+                    #[error(impl_from)]
+                    Unnamed(f32),
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+
+                impl std::convert::From<usize> for E {
+                    fn from(val: usize) -> Self {
+                        E::Named {foo: val}
+                    }
+                }
+
+                impl std::convert::From<f32> for E {
+                    fn from(val: f32) -> Self {
+                        E::Unnamed(val)
+                    }
+                }
+            }
+        )
+    }
+
+    #[test]
+    fn named_unnamed_global_impl_from() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error(impl_from)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                }
+
+                impl std::error::Error for E {}
+
+                impl std::convert::From<usize> for E {
+                    fn from(val: usize) -> Self {
+                        E::Named {foo: val}
+                    }
+                }
+
+                impl std::convert::From<f32> for E {
+                    fn from(val: f32) -> Self {
+                        E::Unnamed(val)
+                    }
+                }
+            }
+        )
+    }
+
+    #[test]
+    #[should_panic(expected = "'std::convert::From' cannot be implemented for enum 'E'. The following variants don't have exactly one field: Unit")]
+    fn unit_impl_from_should_panic() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    #[error(impl_from)]
+                    Unit
+                }
+            }
+
+            expected: {
+                should panic
+            }
+        )
+    }
+
+    #[test]
+    #[should_panic(expected = "'std::convert::From' cannot be implemented for enum 'E'. The following variants don't have exactly one field: Named,Unnamed,Unit")]
+    fn impl_from_multiple_errors_should_panic() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    #[error(impl_from)]
+                    Named {one: usize, two: usize},
+                    #[error(impl_from)]
+                    Unnamed(f32, f32),
+                    #[error(impl_from)]
+                    Unit
+                }
+            }
+
+            expected: {
+                should panic
+            }
+        )
+    }
+
+    #[test]
+    #[should_panic(expected = "'std::convert::From' cannot be implemented for enum 'E'. The following variants don't have exactly one field: Named,Unnamed,Unit")]
+    fn impl_from_global_multiple_errors_should_panic() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error(impl_from)]
+                enum E {
+                    Named {one: usize, two: usize},
+                    Unnamed(f32, f32),
+                    Unit
+                }
+            }
+
+            expected: {
+                should panic
+            }
+        )
+    }
+
+    #[test]
+    #[should_panic(expected = "The 'impl_from' parameter was set on enum 'E' and at least one of its variants. Choose only one (enum or variants).")]
+    fn impl_from_on_variant_and_global_should_panic() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error(impl_from)]
+                enum E {
+                    #[error(impl_from)]
+                    Named {foo: usize},
+                    Unnamed(f32),
+                }
+            }
+
+            expected: {
+                should panic
+            }
+        )
+    }
+
+    #[test]
+    fn impl_display() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    #[error(message = "The foo value: {foo}")]
+                    Named {foo: usize},
+                    #[error(message = "The first value: {_0}")]
+                    Unnamed(f32),
+                    #[error(message = "Something went wrong")]
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+
+                impl std::fmt::Display for E {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        match self {
+                            E::Named {foo,} => write!(f, "The foo value: {}", foo),
+                            E::Unnamed (_0,) => write!(f, "The first value: {}", _0),
+                            E::Unit => write!(f, "Something went wrong"),
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    #[test]
+    fn impl_display_default() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error(message = "Something went wrong")]
+                enum E {
+                    #[error(message = "The foo value: {foo}")]
+                    Named {foo: usize},
+                    #[error(message = "The first value: {_0}")]
+                    Unnamed(f32),
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+
+                impl std::fmt::Display for E {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        match self {
+                            E::Named {foo,} => write!(f, "The foo value: {}", foo),
+                            E::Unnamed (_0,) => write!(f, "The first value: {}", _0),
+                            _ => write!(f, "Something went wrong")
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    #[test]
+    #[should_panic(expected = "All variants for enum 'E' have a Display message, but a default was provided anyways. Please remove the default.")]
+    fn impl_display_unnecessary_default_should_panic() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error(message = "Some default")]
+                enum E {
+                    #[error(message = "The foo value: {foo}")]
+                    Named {foo: usize},
+                    #[error(message = "The first value: {_0}")]
+                    Unnamed(f32),
+                    #[error(message = "Something went wrong")]
+                    Unit
+                }
+            }
+
+            expected: {
+                should panic
+            }
+        )
+    }
+
+    #[test]
+    fn impl_from_and_display() {
+        assert_enum_implementation_as_expected!(
+            item: {
+                #[error]
+                enum E {
+                    #[error(message = "The foo value: {foo}", impl_from)]
+                    Named {foo: usize},
+                    #[error(message = "The first value: {_0}", impl_from)]
+                    Unnamed(f32),
+                    #[error(message = "Something went wrong")]
+                    Unit
+                }
+            }
+
+            expected: {
+                #[derive(Debug)]
+                enum E {
+                    Named {foo: usize},
+                    Unnamed(f32),
+                    Unit
+                }
+
+                impl std::error::Error for E {}
+
+                impl std::convert::From<usize> for E {
+                    fn from(val: usize) -> Self {
+                        E::Named {foo: val}
+                    }
+                }
+
+                impl std::convert::From<f32> for E {
+                    fn from(val: f32) -> Self {
+                        E::Unnamed(val)
+                    }
+                }
+
+                impl std::fmt::Display for E {
+                    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                        match self {
+                            E::Named {foo,} => write!(f, "The foo value: {}", foo),
+                            E::Unnamed (_0,) => write!(f, "The first value: {}", _0),
+                            E::Unit => write!(f, "Something went wrong"),
+                        }
+                    }
+                }
+            }
+        )
+    }
+
+    /// Assert that the generated code for a given enum is as expected.
+    ///
+    /// Generates the code and compares the token streams (as strings) with
+    /// each other.
+    #[macro_export]
+    macro_rules! assert_enum_implementation_as_expected {
+        (item: {$($item_enum:tt)*}  expected: {$($expected:tt)*}) => {
+            {
+                let mut item_enum: syn::ItemEnum = syn::parse_quote!($($item_enum)*);
+                let error_attribute_index = item_enum.attrs
+                    .iter()
+                    .enumerate()
+                    .find(|(_, a)|crate::common::attribute_is_error(a))
+                    .expect("One attribute should be 'error'").0;
+
+                let attribute_args = crate::test_helper::extract_attribute_args(item_enum.attrs.remove(error_attribute_index));
+                let implementation_ts = crate::enum_error::implement(attribute_args, item_enum).to_string();
+                let expected = quote::quote!($($expected)*).to_string();
+                crate::test_helper::assert_tokens_are_equal(implementation_ts, expected)
+            }
+        };
     }
 }

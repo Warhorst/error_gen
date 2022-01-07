@@ -27,7 +27,6 @@ impl<'a> StructDisplayImplementor<'a> {
         quote! {
             impl #impl_generics std::fmt::Display for #ident #type_generics #where_clause {
                 fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                    let e = self;
                     #write_implementation
                 }
             }

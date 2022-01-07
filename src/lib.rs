@@ -11,7 +11,6 @@ mod common;
 mod impl_from;
 mod impl_display;
 #[cfg(test)]
-#[macro_use]
 mod test_helper;
 
 /// Create fully qualified errors with the "error" attribute.
@@ -81,8 +80,7 @@ mod test_helper;
 /// The braces itself will be lost, so expressions with multiple statements must be contained in
 /// an additional pair, like "Complex: {{let mut i = 0; i += 1; i}}".
 ///
-/// To access the error struct itself and its fields/methods, a variable named 'e' will
-/// be created, which is just a reference to self. (You could theoretically use self anyway)
+/// To access the error struct itself and its fields/methods, you can just use 'self'.
 ///
 /// ## the parameter 'impl_from'
 /// The parameter 'impl_from' is of type bool. It is optional.
@@ -148,18 +146,14 @@ mod test_helper;
 ///
 /// ### on enums
 /// The value of 'message' on the enum itself will be used to generate a default message for every variant
-/// without the 'message' parameter set. Just like structs, a variable named 'e' will be created, which
-/// is just a reference to self.
+/// without the 'message' parameter set. Just like structs, you can use self to get the whole enum.
 ///
 /// ### on variants
 /// A specific match arm in the Display implementation will be created when 'message' is used on a variant. Based
 /// on its kind, the fields of the variant will be exposed and can be used in expressions:
 ///
 /// If the variant uses named fields, all names will be usable just by their name. When using tuple like variants,
-/// you can use the index of the field beginning with an underscore, like '_0' (as numbers aren't valid identifiers)
-///
-/// Important: As variants aren't types itself (yet), you cannot call e.field or e.0, as the exposed variable 'e'
-/// will be the whole enum.
+/// you can use the index of the field beginning with an underscore, like '_0' (as numbers aren't valid identifiers).
 ///
 ///
 /// ## the parameter 'impl_from'
