@@ -1,4 +1,4 @@
-# error_gen
+# error_generator
 A crate to generate boilerplate code necessary for fully qualified errors in Rust.
 
 ## Motivation
