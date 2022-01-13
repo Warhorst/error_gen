@@ -165,17 +165,15 @@ mod test_helper;
 /// an enum.
 ///
 /// ### on enums
-/// When used on enums, error_gen tries to create From implementations for every variant of the enum.
+/// When used on enums, error_generator tries to create From implementations for every variant of the enum.
 /// This only works if every variant has only one field.
 ///
 /// ### on variants
-/// When used on a variant, error_gen tries to implement From for the type of the variants single field.
+/// When used on a variant, error_generator tries to implement From for the type of the variants single field.
 /// This fails if the variant has more or less than one field.
 ///
 /// # Important
-/// error_gen will not check if
-///  the expressions in your Display messages are correct.
-///  OR your chosen items for the From implementation interfere with other code.
+/// error_generator will not check if the expressions in your Display messages are correct OR your chosen items for the From implementation interfere with other code.
 /// This might lead to strange compiler errors due to wrong implementations.
 #[proc_macro_attribute]
 pub fn error(attributes: TokenStream, item: TokenStream) -> TokenStream {

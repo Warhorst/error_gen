@@ -79,5 +79,4 @@ This will create any required implementation (Error, Display, From) with much le
 - Lack of IDE support for these kinds of macros. The IDE will warn you about upcoming compiler errors regarding not implemented traits.
 
 ## Future plans
-- ability to disable the "derive(Debug)" attribute, if you want to implement Debug manually 
-- push 'error_gen' to crates.io 
+- ability to disable the "derive(Debug)" attribute, if you want to implement Debug manually

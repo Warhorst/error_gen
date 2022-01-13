@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::fmt::{Debug, Display, Formatter};
 
-use error_gen::error;
+use error_generator::error;
 
 #[test]
 fn unit_no_message_works() {
