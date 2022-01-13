@@ -1,5 +1,5 @@
 [package]
-name = "error_gen"
+name = "error_generator"
 description = "Transform structs and enums into fully qualified errors using attributes"
 license = "MIT"
 repository = "https://github.com/Warhorst/error_gen/"
