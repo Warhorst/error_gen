@@ -1,6 +1,16 @@
 [package]
 name = "error_gen"
 description = "Transform structs and enums into fully qualified errors using attributes"
+license = "MIT"
+repository = "https://github.com/Warhorst/error_gen/"
+readme = "README.md"
+keywords = [
+    "error",
+    "error-handling",
+    "code-generation",
+    "attributes",
+    "proc_macro"
+]
 version = "1.2.0"
 edition = "2018"
 
