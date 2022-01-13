@@ -1,5 +1,6 @@
 [package]
 name = "error_gen"
+description = "Transform structs and enums into fully qualified errors using attributes"
 version = "1.2.0"
 edition = "2018"
 
