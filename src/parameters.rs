@@ -28,7 +28,7 @@ impl Parameters {
 
         match meta {
             syn::Meta::List(list) => Self::from_nested_metas(list.nested),
-            _ => panic!("Expected list-like attribute, like [error(param0 = \"foo\", param1 = false)]")
+            _ => panic!(r#"Expected list-like attribute, like [error(param0 = "foo", param1 = false)]"#)
         }
     }
 

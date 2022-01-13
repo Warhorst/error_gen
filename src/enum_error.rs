@@ -145,7 +145,6 @@ mod tests {
         )
     }
 
-    // TODO: Check if Variant attributes remain too
     #[test]
     fn other_attributes_remain() {
         assert_enum_implementation_as_expected!(
@@ -153,6 +152,7 @@ mod tests {
                 #[error]
                 #[derive(Clone)]
                 enum E {
+                    #[some_attr]
                     Unit
                 }
             }
@@ -161,6 +161,7 @@ mod tests {
                 #[derive(Debug)]
                 #[derive(Clone)]
                 enum E {
+                    #[some_attr]
                     Unit
                 }
 
